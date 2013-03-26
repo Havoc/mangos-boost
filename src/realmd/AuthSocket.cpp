@@ -179,7 +179,9 @@ const AuthHandler table[] =
 #define AUTH_TOTAL_COMMANDS sizeof(table)/sizeof(AuthHandler)
 
 /// Constructor - set the N and g values for SRP6
-AuthSocket::AuthSocket()
+AuthSocket::AuthSocket( NetworkManager& socketMrg, 
+                        NetworkThread& owner ) :
+    Socket(socketMrg, owner)
 {
     N.SetHexStr("894B645E89E1535BBDAD5B8B290650530801B18EBFBF5E8FAB3C82872A3E9BB7");
     g.SetDword(7);
@@ -199,19 +201,23 @@ AuthSocket::~AuthSocket()
 }
 
 /// Accept the connection and set the s random value for SRP6
-void AuthSocket::OnAccept()
+bool AuthSocket::open()
 {
-    BASIC_LOG("Accepting connection from '%s'", get_remote_address().c_str());
+    if( !Socket::open() )
+        return false;
+
+    BASIC_LOG("Accepting connection from '%s'", GetRemoteAddress().c_str());
+    return true;
 }
 
 /// Read the packet from the client
-void AuthSocket::OnRead()
+bool AuthSocket::process_incoming_data()
 {
     uint8 _cmd;
     while (1)
     {
         if (!recv_soft((char*)&_cmd, 1))
-            return;
+            return true;
 
         size_t i;
 
@@ -230,7 +236,7 @@ void AuthSocket::OnRead()
                     DEBUG_LOG("Command handler failed for cmd %u recv length %u",
                               (uint32)_cmd, (uint32)recv_len());
 
-                    return;
+                    return true;
                 }
                 break;
             }
@@ -240,9 +246,11 @@ void AuthSocket::OnRead()
         if (i == AUTH_TOTAL_COMMANDS)
         {
             DEBUG_LOG("[Auth] got unknown packet %u", (uint32)_cmd);
-            return;
+            return true;
         }
     }
+
+    return true;
 }
 
 /// Make the SRP6 calculation from hash in dB
@@ -374,7 +382,7 @@ bool AuthSocket::_HandleLogonChallenge()
 
     ///- Verify that this IP is not in the ip_banned table
     // No SQL injection possible (paste the IP address as passed by the socket)
-    std::string address = get_remote_address();
+    std::string address = GetRemoteAddress();
     LoginDatabase.escape_string(address);
     QueryResult* result = LoginDatabase.PQuery("SELECT unbandate FROM ip_banned WHERE "
                           //    permanent                    still banned
@@ -382,7 +390,7 @@ bool AuthSocket::_HandleLogonChallenge()
     if (result)
     {
         pkt << (uint8)WOW_FAIL_BANNED;
-        BASIC_LOG("[AuthChallenge] Banned ip %s tries to login!", get_remote_address().c_str());
+        BASIC_LOG("[AuthChallenge] Banned ip %s tries to login!", GetRemoteAddress().c_str());
         delete result;
     }
     else
@@ -398,8 +406,8 @@ bool AuthSocket::_HandleLogonChallenge()
             if ((*result)[2].GetUInt8() == 1)               // if ip is locked
             {
                 DEBUG_LOG("[AuthChallenge] Account '%s' is locked to IP - '%s'", _login.c_str(), (*result)[3].GetString());
-                DEBUG_LOG("[AuthChallenge] Player address is '%s'", get_remote_address().c_str());
-                if (strcmp((*result)[3].GetString(), get_remote_address().c_str()))
+                DEBUG_LOG("[AuthChallenge] Player address is '%s'", GetRemoteAddress().c_str());
+                if (strcmp((*result)[3].GetString(), GetRemoteAddress().c_str()))
                 {
                     DEBUG_LOG("[AuthChallenge] Account IP differs");
                     pkt << (uint8) WOW_FAIL_SUSPENDED;
@@ -568,7 +576,7 @@ bool AuthSocket::_HandleLogonProof()
 
         if (file_size == -1)
         {
-            close_connection();
+            CloseSocket();
             return false;
         }
 
@@ -673,7 +681,7 @@ bool AuthSocket::_HandleLogonProof()
         ///- Update the sessionkey, last_ip, last login time and reset number of failed logins in the account table for this account
         // No SQL injection (escaped user name) and IP address as received by socket
         const char* K_hex = K.AsHexStr();
-        LoginDatabase.PExecute("UPDATE account SET sessionkey = '%s', last_ip = '%s', last_login = NOW(), locale = '%u', failed_logins = 0 WHERE username = '%s'", K_hex, get_remote_address().c_str(), GetLocaleByName(_localizationName), _safelogin.c_str());
+        LoginDatabase.PExecute("UPDATE account SET sessionkey = '%s', last_ip = '%s', last_login = NOW(), locale = '%u', failed_logins = 0 WHERE username = '%s'", K_hex, GetRemoteAddress().c_str(), GetLocaleByName(_localizationName), _safelogin.c_str());
         OPENSSL_free((void*)K_hex);
 
         ///- Finish SRP6 and send the final result to the client
@@ -727,7 +735,7 @@ bool AuthSocket::_HandleLogonProof()
                     }
                     else
                     {
-                        std::string current_ip = get_remote_address();
+                        std::string current_ip = GetRemoteAddress();
                         LoginDatabase.escape_string(current_ip);
                         LoginDatabase.PExecute("INSERT INTO ip_banned VALUES ('%s',UNIX_TIMESTAMP(),UNIX_TIMESTAMP()+'%u','MaNGOS realmd','Failed login autoban')",
                                                current_ip.c_str(), WrongPassBanTime);
@@ -786,7 +794,7 @@ bool AuthSocket::_HandleReconnectChallenge()
     if (!result)
     {
         sLog.outError("[ERROR] user %s tried to login and we cannot find his session key in the database.", _login.c_str());
-        close_connection();
+        CloseSocket();
         return false;
     }
 
@@ -843,7 +851,7 @@ bool AuthSocket::_HandleReconnectProof()
     else
     {
         sLog.outError("[ERROR] user %s tried to login, but session invalid.", _login.c_str());
-        close_connection();
+        CloseSocket();
         return false;
     }
 }
@@ -864,7 +872,7 @@ bool AuthSocket::_HandleRealmList()
     if (!result)
     {
         sLog.outError("[ERROR] user %s tried to login and we cannot find him in the database.", _login.c_str());
-        close_connection();
+        CloseSocket();
         return false;
     }
 
@@ -1033,7 +1041,7 @@ bool AuthSocket::_HandleXferResume()
 
     if (patch_ == ACE_INVALID_HANDLE)
     {
-        close_connection();
+        CloseSocket();
         return false;
     }
 
@@ -1041,13 +1049,13 @@ bool AuthSocket::_HandleXferResume()
 
     if (file_size == -1 || start_pos >= (uint64)file_size)
     {
-        close_connection();
+        CloseSocket();
         return false;
     }
 
     if (ACE_OS::lseek(patch_, start_pos, SEEK_SET) == -1)
     {
-        close_connection();
+        CloseSocket();
         return false;
     }
 
@@ -1062,7 +1070,7 @@ bool AuthSocket::_HandleXferCancel()
     DEBUG_LOG("Entering _HandleXferCancel");
 
     recv_skip(1);
-    close_connection();
+    CloseSocket();
 
     return true;
 }
@@ -1081,14 +1089,67 @@ bool AuthSocket::_HandleXferAccept()
 
 void AuthSocket::InitPatch()
 {
-    PatchHandler* handler = new PatchHandler(ACE_OS::dup(get_handle()), patch_);
+    PatchHandlerPtr handler( new PatchHandler( socket(), patch_) );
 
     patch_ = ACE_INVALID_HANDLE;
 
-    if (handler->open() == -1)
+    if ( !handler->open() )
     {
-        handler->close();
-        close_connection();
+        CloseSocket();
     }
+}
+
+size_t AuthSocket::recv_len(void) const
+{
+    return m_ReadBuffer->length();
+}
+
+bool AuthSocket::recv_soft(char* buf, size_t len)
+{
+    if (m_ReadBuffer->length() < len)
+        return false;
+
+    ACE_OS::memcpy(buf, m_ReadBuffer->rd_ptr(), len);
+
+    return true;
+}
+
+bool AuthSocket::recv(char* buf, size_t len)
+{
+    bool ret = this->recv_soft(buf, len);
+
+    if (ret)
+        this->recv_skip(len);
+
+    return ret;
+}
+
+void AuthSocket::recv_skip(size_t len)
+{
+    m_ReadBuffer->rd_ptr(len);
+}
+
+bool AuthSocket::send(const char* buf, size_t len)
+{
+    if (buf == NULL || len == 0)
+        return true;
+
+    GuardType Guard( m_OutBufferLock );
+
+    if (m_OutBuffer->space() >= len)
+    {
+        // Put the packet on the buffer.
+        if ( m_OutBuffer->copy((char*) buf, len) == -1 )
+            MANGOS_ASSERT(false);
+    }
+    else
+    {
+        // Enqueue the packet.
+        throw std::exception("network write buffer is too small to accommodate packet");
+    }
+
+    start_async_send();
+
+    return true;
 }
 

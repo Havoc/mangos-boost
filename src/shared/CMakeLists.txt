@@ -79,6 +79,13 @@ set(LIBRARY_SRCS
     Util.cpp
     Util.h
     WorldPacket.h
+	Network/ProtocolDefinitions.h
+	Network/Socket.cpp
+	Network/Socket.h
+	Network/NetworkThread.cpp
+	Network/NetworkThread.h
+	Network/NetworkManager.cpp
+	Network/NetworkManager.h
    )
 
 # OS specific files

@@ -80,7 +80,7 @@ bool WorldSessionFilter::Process(WorldPacket* packet)
 }
 
 /// WorldSession constructor
-WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale) :
+WorldSession::WorldSession(uint32 id, const boost::shared_ptr<WorldSocket>& sock, AccountTypes sec, uint8 expansion, time_t mute_time, LocaleConstant locale) :
     m_muteTime(mute_time), _player(NULL), m_Socket(sock), _security(sec), _accountId(id), m_expansion(expansion), _logoutTime(0),
     m_inQueue(false), m_playerLoading(false), m_playerLogout(false), m_playerRecentlyLogout(false), m_playerSave(false),
     m_sessionDbcLocale(sWorld.GetAvailableDbcLocale(locale)), m_sessionDbLocaleIndex(sObjectMgr.GetIndexForLocale(locale)),
@@ -89,7 +89,6 @@ WorldSession::WorldSession(uint32 id, WorldSocket* sock, AccountTypes sec, uint8
     if (sock)
     {
         m_Address = sock->GetRemoteAddress();
-        sock->AddReference();
     }
 }
 
@@ -104,8 +103,7 @@ WorldSession::~WorldSession()
     if (m_Socket)
     {
         m_Socket->CloseSocket();
-        m_Socket->RemoveReference();
-        m_Socket = NULL;
+        m_Socket.reset();
     }
 
     ///- empty incoming packet queue
@@ -168,7 +166,7 @@ void WorldSession::SendPacket(WorldPacket const* packet)
 
 #endif                                                  // !MANGOS_DEBUG
 
-    if (m_Socket->SendPacket(*packet) == -1)
+    if ( !m_Socket->SendPacket(*packet) )
         m_Socket->CloseSocket();
 }
 
@@ -301,8 +299,7 @@ bool WorldSession::Update(PacketFilter& updater)
     ///- Cleanup socket pointer if need
     if (m_Socket && m_Socket->IsClosed())
     {
-        m_Socket->RemoveReference();
-        m_Socket = NULL;
+        m_Socket.reset();
     }
 
     // check if we are safe to proceed with logout

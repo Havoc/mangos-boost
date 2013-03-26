@@ -616,14 +616,6 @@
 			>
 		</File>
 		<File
-			RelativePath="..\..\src\realmd\BufferedSocket.cpp"
-			>
-		</File>
-		<File
-			RelativePath="..\..\src\realmd\BufferedSocket.h"
-			>
-		</File>
-		<File
 			RelativePath="..\..\src\realmd\Main.cpp"
 			>
 		</File>
@@ -645,6 +637,14 @@
 		</File>
 		<File
 			RelativePath="..\..\src\realmd\RealmList.h"
+			>
+		</File>
+		<File
+			RelativePath="..\..\src\realmd\SessionManager.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\..\src\realmd\SessionManager.h"
 			>
 		</File>
 		<File

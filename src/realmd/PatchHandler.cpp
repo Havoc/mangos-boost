@@ -32,6 +32,8 @@
 
 #include <ace/os_include/netinet/os_tcp.h>
 
+#include <boost/bind.hpp>
+
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
 #endif
@@ -55,11 +57,15 @@ struct Chunk
 #pragma pack(pop)
 #endif
 
-PatchHandler::PatchHandler(ACE_HANDLE socket, ACE_HANDLE patch)
+PatchHandler::PatchHandler(protocol::Socket& socket, ACE_HANDLE patch) :
+    m_socket( socket ),
+    m_timer( m_socket.get_io_service(), boost::posix_time::seconds(1) ),
+    patch_fd_( patch ),
+    m_sendBuffer( sizeof(Chunk) )
 {
-    reactor(NULL);
-    set_handle(socket);
-    patch_fd_ = patch;
+    Chunk * data = (Chunk *)m_sendBuffer.rd_ptr();
+    data->cmd = CMD_XFER_DATA;
+    data->data_size = 0;
 }
 
 PatchHandler::~PatchHandler()
@@ -68,67 +74,68 @@ PatchHandler::~PatchHandler()
         ACE_OS::close(patch_fd_);
 }
 
-int PatchHandler::open(void*)
+size_t PatchHandler::offset() const
 {
-    if (get_handle() == ACE_INVALID_HANDLE || patch_fd_ == ACE_INVALID_HANDLE)
-        return -1;
-
-    int nodelay = 0;
-    if (-1 == peer().set_option(ACE_IPPROTO_TCP,
-                                TCP_NODELAY,
-                                &nodelay,
-                                sizeof(nodelay)))
-    {
-        return -1;
-    }
-
-#if defined(TCP_CORK)
-    int cork = 1;
-    if (-1 == peer().set_option(ACE_IPPROTO_TCP,
-                                TCP_CORK,
-                                &cork,
-                                sizeof(cork)))
-    {
-        return -1;
-    }
-#endif // TCP_CORK
-
-    (void) peer().disable(ACE_NONBLOCK);
-
-    return activate(THR_NEW_LWP | THR_DETACHED | THR_INHERIT_SCHED);
+    Chunk * chunk = (Chunk *)m_sendBuffer.rd_ptr();
+    return sizeof(Chunk) - sizeof(chunk->data);
 }
 
-int PatchHandler::svc(void)
+bool PatchHandler::open()
 {
-    // Do 1 second sleep, similar to the one in game/WorldSocket.cpp
-    // Seems client have problems with too fast sends.
-    ACE_OS::sleep(1);
+    if ( patch_fd_ == ACE_INVALID_HANDLE)
+        return false;
 
-    int flags = MSG_NOSIGNAL;
+    m_timer.async_wait( boost::bind(&PatchHandler::on_timeout, shared_from_this(), boost::asio::placeholders::error) );
+    return true;
+}
 
-    Chunk data;
-    data.cmd = CMD_XFER_DATA;
+void PatchHandler::on_timeout( const boost::system::error_code& error)
+{
+    if( error )
+        return;
 
-    ssize_t r;
+    transmit_file();
+}
 
-    while ((r = ACE_OS::read(patch_fd_, data.data, sizeof(data.data))) > 0)
+
+void PatchHandler::transmit_file()
+{
+    m_sendBuffer.reset();
+
+    Chunk * data = (Chunk *)m_sendBuffer.rd_ptr();
+
+    ssize_t r = ACE_OS::read(patch_fd_, data->data, sizeof(data->data));
+    if( r <= 0 )
+        return;
+
+    data->data_size = (ACE_UINT16)r;
+    m_sendBuffer.wr_ptr( size_t(r) + offset() );
+
+    start_async_write();
+}
+
+void PatchHandler::start_async_write()
+{
+    m_socket.async_write_some( boost::asio::buffer( m_sendBuffer.rd_ptr(), m_sendBuffer.length() ),
+        boost::bind( &PatchHandler::on_write_complete, shared_from_this(), 
+                     boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred ));
+}
+
+void PatchHandler::on_write_complete( const boost::system::error_code& error, 
+                                      size_t bytes_transferred )
+{
+    if( error )
+        return;
+
+    m_sendBuffer.rd_ptr( bytes_transferred );
+
+    if(m_sendBuffer.length() > 0 )
     {
-        data.data_size = (ACE_UINT16)r;
-
-        if (peer().send((const char*)&data,
-                        ((size_t) r) + sizeof(data) - sizeof(data.data),
-                        flags) == -1)
-        {
-            return -1;
-        }
+        start_async_write();
+        return;
     }
 
-    if (r == -1)
-    {
-        return -1;
-    }
-
-    return 0;
+    transmit_file();
 }
 
 PatchCache::~PatchCache()

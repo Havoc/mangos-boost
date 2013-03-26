@@ -28,19 +28,23 @@
 #include "Auth/Sha1.h"
 #include "ByteBuffer.h"
 
-#include "BufferedSocket.h"
+#include "Network/Socket.h"
+
+#include <string>
+
+class NetworkManager;
+class NetworkThread;
 
 /// Handle login commands
-class AuthSocket: public BufferedSocket
+class AuthSocket: public Socket
 {
     public:
         const static int s_BYTE_SIZE = 32;
 
-        AuthSocket();
+        AuthSocket( NetworkManager& socketMrg, 
+                    NetworkThread& owner );
         ~AuthSocket();
 
-        void OnAccept() override;
-        void OnRead() override;
         void SendProof(Sha1Hash sha);
         void LoadRealmlist(ByteBuffer& pkt, uint32 acctid);
 
@@ -57,7 +61,20 @@ class AuthSocket: public BufferedSocket
 
         void _SetVSFields(const std::string& rI);
 
+protected:
+
+    virtual bool open() override;
+
+    virtual bool process_incoming_data() override;
+
     private:
+
+        size_t recv_len(void) const;
+        bool recv_soft(char* buf, size_t len);
+        bool recv(char* buf, size_t len);
+        void recv_skip(size_t len);
+
+        bool send(const char* buf, size_t len);
 
         BigNumber N, s, g, v;
         BigNumber b, B;

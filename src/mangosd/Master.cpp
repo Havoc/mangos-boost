@@ -310,7 +310,7 @@ int Master::Run()
     uint16 wsport = sWorld.getConfig(CONFIG_UINT32_PORT_WORLD);
     std::string bind_ip = sConfig.GetStringDefault("BindIP", "0.0.0.0");
 
-    if (sWorldSocketMgr->StartNetwork(wsport, bind_ip) == -1)
+    if ( !sWorldSocketMgr->StartNetwork(wsport, bind_ip) )
     {
         sLog.outError("Failed to start network");
         Log::WaitBeforeContinueIfNeed();

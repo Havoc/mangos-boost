@@ -36,11 +36,10 @@
 #include <openssl/crypto.h>
 
 #include <ace/Get_Opt.h>
-#include <ace/Dev_Poll_Reactor.h>
-#include <ace/TP_Reactor.h>
 #include <ace/ACE.h>
-#include <ace/Acceptor.h>
-#include <ace/SOCK_Acceptor.h>
+#include <ace/OS_NS_unistd.h>
+
+#include "SessionManager.h"
 
 #ifdef WIN32
 #include "ServiceWin32.h"
@@ -210,12 +209,6 @@ extern int main(int argc, char** argv)
 
     DETAIL_LOG("Using ACE: %s", ACE_VERSION);
 
-#if defined (ACE_HAS_EVENT_POLL) || defined (ACE_HAS_DEV_POLL)
-    ACE_Reactor::instance(new ACE_Reactor(new ACE_Dev_Poll_Reactor(ACE::max_handles(), 1), 1), true);
-#else
-    ACE_Reactor::instance(new ACE_Reactor(new ACE_TP_Reactor(), true), true);
-#endif
-
     sLog.outBasic("Max allowed open files is %d", ACE::max_handles());
 
     /// realmd PID file creation
@@ -257,14 +250,12 @@ extern int main(int argc, char** argv)
     LoginDatabase.CommitTransaction();
 
     ///- Launch the listening network socket
-    ACE_Acceptor<AuthSocket, ACE_SOCK_Acceptor> acceptor;
 
     uint16 rmport = sConfig.GetIntDefault("RealmServerPort", DEFAULT_REALMSERVER_PORT);
     std::string bind_ip = sConfig.GetStringDefault("BindIP", "0.0.0.0");
 
-    ACE_INET_Addr bind_addr(rmport, bind_ip.c_str());
-
-    if (acceptor.open(bind_addr, ACE_Reactor::instance(), ACE_NONBLOCK) == -1)
+    std::auto_ptr< SessionManager > manager( new SessionManager() );
+    if ( !manager->StartNetwork( rmport, bind_ip ))
     {
         sLog.outError("MaNGOS realmd can not bind to %s:%d", bind_ip.c_str(), rmport);
         Log::WaitBeforeContinueIfNeed();
@@ -331,10 +322,7 @@ extern int main(int argc, char** argv)
     while (!stopEvent)
     {
         // dont move this outside the loop, the reactor will modify it
-        ACE_Time_Value interval(0, 100000);
-
-        if (ACE_Reactor::instance()->run_reactor_event_loop(interval) == -1)
-            break;
+        ACE_OS::sleep( ACE_Time_Value(0, 100000) );
 
         if ((++loopCounter) == numLoops)
         {
@@ -347,6 +335,9 @@ extern int main(int argc, char** argv)
         while (m_ServiceStatus == 2) Sleep(1000);
 #endif
     }
+
+    manager->StopNetwork();
+    manager.reset();
 
     ///- Wait for the delay thread to exit
     LoginDatabase.HaltDelayThread();
