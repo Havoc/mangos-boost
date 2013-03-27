@@ -66,6 +66,14 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   )
 endif()
 
+# find boost lib
+set(BOOST_ROOT $ENV{BOOST_ROOT})
+set(Boost_USE_STATIC_LIBS   ON)
+set(Boost_USE_MULTITHREADED ON)
+find_package(Boost REQUIRED COMPONENTS )
+include_directories(${Boost_INCLUDE_DIRS})
+link_directories(${Boost_LIBRARY_DIRS})
+
 # TODO: allow other compilers under windows in the future
 if(WIN32 AND NOT MSVC)
   message(FATAL_ERROR

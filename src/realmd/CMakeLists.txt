@@ -56,6 +56,7 @@ endif()
 target_link_libraries(${EXECUTABLE_NAME}
   shared
   framework
+  ${Boost_LIBRARIES}
   ${ACE_LIBRARIES}
 )
 
