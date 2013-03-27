@@ -36,6 +36,9 @@
 #include <ace/OS_NS_fcntl.h>
 #include <ace/OS_NS_sys_stat.h>
 
+#include <boost/filesystem/path.hpp>
+#include <boost/filesystem/operations.hpp>
+
 extern DatabaseType LoginDatabase;
 
 enum eStatus
@@ -551,11 +554,8 @@ bool AuthSocket::_HandleLogonProof()
 
         snprintf(tmp, 24, "./patches/%d%s.mpq", _build, _localizationName.c_str());
 
-        char filename[PATH_MAX];
-        if (ACE_OS::realpath(tmp, filename) != NULL)
-        {
-            patch_ = ACE_OS::open(filename, GENERIC_READ | FILE_FLAG_SEQUENTIAL_SCAN);
-        }
+        boost::filesystem::path filename = tmp;
+        patch_ = ACE_OS::open(boost::filesystem::absolute(filename).generic_wstring().c_str(), GENERIC_READ | FILE_FLAG_SEQUENTIAL_SCAN);
 
         if (patch_ == ACE_INVALID_HANDLE)
         {

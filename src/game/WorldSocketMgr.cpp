@@ -28,6 +28,8 @@
 #include "Config/Config.h"
 #include "WorldSocket.h"
 
+#include <boost/system/error_code.hpp>
+
 WorldSocketMgr::WorldSocketMgr():
     m_SockOutKBuff(-1),
     m_SockOutUBuff(protocol::SEND_BUFFER_SIZE),
@@ -60,7 +62,7 @@ bool WorldSocketMgr::StartNetworkIO( boost::uint16_t port, const char* address )
     if( !NetworkManager::StartNetworkIO( port, address ) )
         return false;
 
-    BASIC_LOG("Max allowed socket connections %d", ACE::max_handles());
+    BASIC_LOG("Max allowed socket connections %d", boost::asio::socket_base::max_connections);
     return true;
 }
 
@@ -76,7 +78,8 @@ bool WorldSocketMgr::OnSocketOpen( const SocketPtr& sock )
     // Set TCP_NODELAY.
     if (m_UseNoDelay && !sock->EnableTCPNoDelay( m_UseNoDelay ))
     {
-        sLog.outError("WorldSocketMgr::OnSocketOpen: peer().set_option TCP_NODELAY errno = %s", ACE_OS::strerror(errno));
+        sLog.outError("WorldSocketMgr::OnSocketOpen: peer().set_option TCP_NODELAY errno = %s",
+            boost::system::error_code(errno, boost::system::get_system_category()).message());
         return false;
     }
 

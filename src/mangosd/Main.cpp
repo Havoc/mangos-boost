@@ -34,6 +34,7 @@
 #include <openssl/crypto.h>
 #include <ace/Version.h>
 #include <ace/Get_Opt.h>
+#include <boost/version.hpp>
 
 #ifdef WIN32
 #include "ServiceWin32.h"
@@ -202,6 +203,7 @@ extern int main(int argc, char** argv)
     }
 
     DETAIL_LOG("Using ACE: %s", ACE_VERSION);
+    DETAIL_LOG("Using BOOST: %i.%i.%i", BOOST_VERSION / 100000, BOOST_VERSION / 100 % 1000, BOOST_VERSION % 100);
 
     ///- Set progress bars show mode
     BarGoLink::SetOutputState(sConfig.GetBoolDefault("ShowProgressBars", true));

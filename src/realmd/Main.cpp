@@ -37,7 +37,10 @@
 
 #include <ace/Get_Opt.h>
 #include <ace/ACE.h>
-#include <ace/OS_NS_unistd.h>
+#include <boost/date_time/posix_time/posix_time_duration.hpp>
+#include <boost/thread.hpp>
+#include <boost/version.hpp>
+#include <sstream>
 
 #include "SessionManager.h"
 
@@ -208,8 +211,9 @@ extern int main(int argc, char** argv)
     }
 
     DETAIL_LOG("Using ACE: %s", ACE_VERSION);
+    DETAIL_LOG("Using BOOST: %i.%i.%i", BOOST_VERSION / 100000, BOOST_VERSION / 100 % 1000, BOOST_VERSION % 100);
 
-    sLog.outBasic("Max allowed open files is %d", ACE::max_handles());
+    sLog.outBasic("Max allowed open files is %d", boost::asio::socket_base::max_connections);
 
     /// realmd PID file creation
     std::string pidfile = sConfig.GetStringDefault("PidFile", "");
@@ -322,7 +326,7 @@ extern int main(int argc, char** argv)
     while (!stopEvent)
     {
         // dont move this outside the loop, the reactor will modify it
-        ACE_OS::sleep( ACE_Time_Value(0, 100000) );
+        boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 
         if ((++loopCounter) == numLoops)
         {

@@ -16,8 +16,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <boost/bind.hpp>
-
 #include "WorldSocket.h"
 #include "Common.h"
 
@@ -33,6 +31,10 @@
 #include "WorldSocketMgr.h"
 #include "Log.h"
 #include "DBCStores.h"
+
+#include <boost/bind.hpp>
+#include <boost/thread.hpp>
+#include <boost/date_time/posix_time/posix_time_duration.hpp>
 
 #if defined( __GNUC__ )
 #pragma pack(1)
@@ -587,8 +589,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     m_Session->LoadTutorialsData();
     m_Session->ReadAddonsInfo(recvPacket);
 
-    // In case needed sometime the second arg is in microseconds 1 000 000 = 1 sec
-    ACE_OS::sleep(ACE_Time_Value(0, 10000));
+    boost::this_thread::sleep(boost::posix_time::milliseconds(10));
 
     sWorld.AddSession(m_Session);
 

@@ -26,17 +26,24 @@
 #include <ace/OS_NS_dlfcn.h>
 #include <ace/ACE_export.h>
 
+#include <boost/cstdint.hpp>
+#include <boost/static_assert.hpp>
+
+#include <boost/detail/endian.hpp>
+
 #include "Platform/CompilerDefs.h"
 
 #define MANGOS_LITTLEENDIAN 0
 #define MANGOS_BIGENDIAN    1
 
 #if !defined(MANGOS_ENDIAN)
-#  if defined (ACE_BIG_ENDIAN)
+#  if defined (BOOST_BIG_ENDIAN)
 #    define MANGOS_ENDIAN MANGOS_BIGENDIAN
-#  else // ACE_BYTE_ORDER != ACE_BIG_ENDIAN
+#  elif defined (BOOST_LITTLE_ENDIAN)
 #    define MANGOS_ENDIAN MANGOS_LITTLEENDIAN
-#  endif // ACE_BYTE_ORDER
+#  else
+#    error "Unsuported endianess"
+#  endif
 #endif // MANGOS_ENDIAN
 
 typedef ACE_SHLIB_HANDLE MANGOS_LIBRARY_HANDLE;
@@ -105,33 +112,28 @@ typedef ACE_SHLIB_HANDLE MANGOS_LIBRARY_HANDLE;
 #  define ATTR_PRINTF(F,V)
 #endif // COMPILER == COMPILER_GNU
 
-typedef ACE_INT64 int64;
-typedef ACE_INT32 int32;
-typedef ACE_INT16 int16;
-typedef ACE_INT8 int8;
-typedef ACE_UINT64 uint64;
-typedef ACE_UINT32 uint32;
-typedef ACE_UINT16 uint16;
-typedef ACE_UINT8 uint8;
+typedef boost::int64_t int64;
+typedef boost::int32_t int32;
+typedef boost::int16_t int16;
+typedef boost::int8_t int8;
+typedef boost::uint64_t uint64;
+typedef boost::uint32_t uint32;
+typedef boost::uint16_t uint16;
+typedef boost::uint8_t uint8;
 
 #if COMPILER != COMPILER_MICROSOFT
 typedef uint16      WORD;
 typedef uint32      DWORD;
 #endif // COMPILER
 
-#define CONCAT(x, y) CONCAT1(x, y)
-#define CONCAT1(x, y) x##y
-#define STATIC_ASSERT_WORKAROUND(expr, msg) typedef char CONCAT(static_assert_failed_at_line_, __LINE__) [(expr) ? 1 : -1]
-
 #if COMPILER == COMPILER_GNU
 #  if !defined(__GXX_EXPERIMENTAL_CXX0X__) || (__GNUC__ < 4) || (__GNUC__ == 4) && (__GNUC_MINOR__ < 7)
 #    define override
-#    define static_assert(a, b) STATIC_ASSERT_WORKAROUND(a, b)
 #  endif
-#elif COMPILER == COMPILER_MICROSOFT
-#  if _MSC_VER < 1600
-#    define static_assert(a, b) STATIC_ASSERT_WORKAROUND(a, b)
-#  endif
+#endif
+
+#ifdef BOOST_NO_CXX11_STATIC_ASSERT
+#  define static_assert(a, b) BOOST_STATIC_ASSERT_MSG((a), b)
 #endif
 
 typedef uint64 OBJECT_HANDLE;

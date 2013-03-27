@@ -24,11 +24,12 @@
 #include "ByteBuffer.h"
 #include "ProgressBar.h"
 
+#include <boost/thread.hpp>
+#include <boost/date_time/posix_time/posix_time_duration.hpp>
+
 #include <stdarg.h>
 #include <fstream>
 #include <iostream>
-
-#include "ace/OS_NS_unistd.h"
 
 INSTANTIATE_SINGLETON_1(Log);
 
@@ -942,7 +943,7 @@ void Log::WaitBeforeContinueIfNeed()
         for (int i = 0; i < mode; ++i)
         {
             bar.step();
-            ACE_OS::sleep(1);
+            boost::this_thread::sleep(boost::posix_time::seconds(1));
         }
     }
 }
