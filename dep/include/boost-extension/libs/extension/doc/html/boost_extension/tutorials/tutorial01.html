@@ -1,0 +1,173 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Tutorial 1</title>
+<link rel="stylesheet" href="../../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.72.0">
+<link rel="start" href="../../index.html" title="Chapter 1. Boost.Extension 1.0">
+<link rel="up" href="../tutorials.html" title="Tutorials">
+<link rel="prev" href="../tutorials.html" title="Tutorials">
+<link rel="next" href="tutorial02.html" title="Tutorial 2">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%">
+<td valign="top"><img alt="Boost C++ Libraries" width="277" height="86" src="../../../../boost.png"></td>
+<td align="center"><a href="../../../../index.htm">Home</a></td>
+<td align="center"><a href="../../libraries.html">Libraries</a></td>
+<td align="center"><a href="../../../../people/people.htm">People</a></td>
+<td align="center"><a href="../../../../more/faq.htm">FAQ</a></td>
+<td align="center"><a href="../../../../more/index.htm">More</a></td>
+</table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../tutorials.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../tutorials.html"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="tutorial02.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="boost_extension.tutorials.tutorial01"></a> Tutorial 1</h3></div></div></div>
+<p>
+        Create a class that we will later subclass and put it into a header file
+        called word.hpp. 
+</p>
+<pre class="programlisting">
+<span class="keyword">class</span> <span class="identifier">word</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="keyword">virtual</span> <span class="special">~</span><span class="identifier">word</span><span class="special">(){}</span>
+  <span class="keyword">virtual</span> <span class="keyword">const</span> <span class="keyword">char</span> <span class="special">*</span> <span class="identifier">get_val</span><span class="special">(){</span><span class="keyword">return</span> <span class="string">""</span><span class="special">;}</span>
+<span class="special">};</span>
+</pre>
+<p>
+        This file will be included by both the shared library in which classes implement
+        this interface, and in the executable that will load these implementations.
+        The destructor ought to be virtual, just to ensure proper deletion. We create
+        one virtual function. We could actually add data to this class as well.
+      </p>
+<p>
+        Now create a file called hello_world.cpp. This will be compiled into a shared
+        library:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting">
+<span class="preprocessor">#include</span> <span class="string">"word.hpp"</span> 
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">extension</span><span class="special">/</span><span class="identifier">factory_map</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+
+<span class="keyword">class</span> <span class="identifier">world</span> <span class="special">:</span> <span class="keyword">public</span> <span class="identifier">word</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="keyword">virtual</span> <span class="keyword">const</span> <span class="keyword">char</span> <span class="special">*</span> <span class="identifier">get_val</span><span class="special">(){</span><span class="keyword">return</span> <span class="string">"world!"</span><span class="special">;}</span>
+<span class="special">};</span>
+<span class="keyword">class</span> <span class="identifier">hello</span> <span class="special">:</span> <span class="keyword">public</span> <span class="identifier">word</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="keyword">virtual</span> <span class="keyword">const</span> <span class="keyword">char</span> <span class="special">*</span> <span class="identifier">get_val</span><span class="special">(){</span><span class="keyword">return</span> <span class="string">"hello"</span><span class="special">;}</span>
+<span class="special">};</span>
+</pre>
+<p>
+        Now we have two classes that are derived from word, and that both implement
+        the virtual function get_val. All that's left is to declare them for exporting.
+        Normally, we just put one function in the entire shared library that exports
+        all exportable classes in the library. 
+</p>
+<pre class="programlisting">
+<span class="keyword">extern</span> <span class="string">"C"</span> <span class="keyword">void</span> <span class="identifier">BOOST_EXTENSION_EXPORT_DECL</span> <span class="identifier">extension_export_word</span><span class="special">(</span><span class="identifier">boost</span><span class="special">::</span><span class="identifier">extensions</span><span class="special">::</span><span class="identifier">factory_map</span> <span class="special">&amp;</span> <span class="identifier">fm</span><span class="special">)</span>
+<span class="special">{</span>
+  <span class="identifier">fm</span><span class="special">.</span><span class="identifier">add</span><span class="special">&lt;</span><span class="identifier">hello</span><span class="special">,</span> <span class="identifier">word</span><span class="special">,</span> <span class="keyword">int</span><span class="special">&gt;(</span><span class="number">1</span><span class="special">);</span>
+  <span class="identifier">fm</span><span class="special">.</span><span class="identifier">add</span><span class="special">&lt;</span><span class="identifier">world</span><span class="special">,</span> <span class="identifier">word</span><span class="special">,</span> <span class="keyword">int</span><span class="special">&gt;(</span><span class="number">2</span><span class="special">);</span>
+<span class="special">}</span>
+</pre>
+<p>
+        <code class="computeroutput"><span class="keyword">extern</span> <span class="string">"C"</span></code>
+        is required to keep the function name from being mangled. <code class="computeroutput"><span class="identifier">BOOST_EXTENSION_EXPORT_DECL</span></code>
+        is only necessary on Windows - on other platforms it does nothing. On Windows,
+        it declares that the function should be exported. This is the default in
+        shared libraries on other platforms.
+      </p>
+<p>
+        The <code class="computeroutput"><span class="identifier">factory_map</span><span class="special">::</span><span class="identifier">add</span></code> function takes three template arguments:
+        the class to export, the interface that it is being exported as, and what
+        type of info is used to identify it (which can be an arbitrary type). The
+        argument is the value for that identification info.
+      </p>
+<p>
+        Now we can write the executable.
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting">
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">extension</span><span class="special">/</span><span class="identifier">factory_map</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">extension</span><span class="special">/</span><span class="identifier">shared_library</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">iostream</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">extension</span><span class="special">/</span><span class="identifier">convenience</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="string">"word.hpp"</span>
+<span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span>
+<span class="special">{</span>
+  <span class="keyword">using</span> <span class="keyword">namespace</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">extensions</span><span class="special">;</span>
+  <span class="comment">//  Create the factory_map object - it will hold all of the available
+</span> <span class="comment">//  constructors. Multiple factory_maps can be constructed.
+</span> <span class="identifier">factory_map</span> <span class="identifier">fm</span><span class="special">;</span>
+  <span class="comment">// load the shared library with 
+</span> <span class="identifier">load_single_library</span><span class="special">(</span><span class="identifier">fm</span><span class="special">,</span> <span class="string">"libHelloWorldLib.extension"</span><span class="special">,</span> <span class="string">"extension_export_word"</span><span class="special">);</span>
+  <span class="comment">//  Get a reference to the list of constructors for words.
+</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">list</span><span class="special">&lt;</span><span class="identifier">factory</span><span class="special">&lt;</span><span class="identifier">word</span><span class="special">,</span> <span class="keyword">int</span><span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&amp;</span> <span class="identifier">factory_list</span> <span class="special">=</span> <span class="identifier">fm</span><span class="special">.</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">word</span><span class="special">,</span> <span class="keyword">int</span><span class="special">&gt;();</span>  
+  <span class="keyword">if</span> <span class="special">(</span><span class="identifier">factory_list</span><span class="special">.</span><span class="identifier">size</span><span class="special">()</span> <span class="special">&lt;</span> <span class="number">2</span><span class="special">)</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Error - the classes were not found."</span><span class="special">;</span>
+  <span class="keyword">for</span> <span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">list</span><span class="special">&lt;</span><span class="identifier">factory</span><span class="special">&lt;</span><span class="identifier">word</span><span class="special">,</span> <span class="keyword">int</span><span class="special">&gt;</span> <span class="special">&gt;::</span><span class="identifier">iterator</span> <span class="identifier">current_word</span> <span class="special">=</span> <span class="identifier">factory_list</span><span class="special">.</span><span class="identifier">begin</span><span class="special">();</span>
+       <span class="identifier">current_word</span> <span class="special">!=</span> <span class="identifier">factory_list</span><span class="special">.</span><span class="identifier">end</span><span class="special">();</span> <span class="special">++</span><span class="identifier">current_word</span><span class="special">)</span>
+  <span class="special">{</span>
+    <span class="comment">//  Using auto_ptr to avoid needing delete. Using smart_ptrs is recommended.
+</span> <span class="comment">//  Note that this has a zero argument constructor - currently constructors
+</span> <span class="comment">//  with up to six arguments can be used.
+</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">auto_ptr</span><span class="special">&lt;</span><span class="identifier">word</span><span class="special">&gt;</span> <span class="identifier">word_ptr</span><span class="special">(</span><span class="identifier">current_word</span><span class="special">-&gt;</span><span class="identifier">create</span><span class="special">());</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="identifier">word_ptr</span><span class="special">-&gt;</span><span class="identifier">get_val</span><span class="special">()</span> <span class="special">&lt;&lt;</span> <span class="string">" "</span><span class="special">;</span>
+  <span class="special">}</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
+  <span class="keyword">return</span> <span class="number">0</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+        Now we just need to write the build file. You may have noticed above that
+        the name of the library is assumed to be libHelloWorld.extension - we'll
+        need to rename whatever shared library is compiled to that. Boost.Build can
+        do this automatically.
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting">
+<span class="identifier">import</span> <span class="identifier">type</span> <span class="special">:</span> <span class="identifier">change</span><span class="special">-</span><span class="identifier">generated</span><span class="special">-</span><span class="identifier">target</span><span class="special">-</span><span class="identifier">suffix</span> <span class="special">;</span>
+<span class="identifier">import</span> <span class="identifier">type</span> <span class="special">:</span> <span class="identifier">change</span><span class="special">-</span><span class="identifier">generated</span><span class="special">-</span><span class="identifier">target</span><span class="special">-</span><span class="identifier">prefix</span> <span class="special">;</span>
+<span class="identifier">type</span><span class="special">.</span><span class="identifier">change</span><span class="special">-</span><span class="identifier">generated</span><span class="special">-</span><span class="identifier">target</span><span class="special">-</span><span class="identifier">suffix</span> <span class="identifier">SHARED_LIB</span> <span class="special">:</span> <span class="special">:</span> <span class="identifier">extension</span> <span class="special">;</span>
+<span class="identifier">type</span><span class="special">.</span><span class="identifier">change</span><span class="special">-</span><span class="identifier">generated</span><span class="special">-</span><span class="identifier">target</span><span class="special">-</span><span class="identifier">prefix</span> <span class="identifier">SHARED_LIB</span> <span class="special">:</span> <span class="special">:</span> <span class="identifier">lib</span> <span class="special">;</span>
+<span class="identifier">import</span> <span class="identifier">os</span> <span class="special">;</span>
+
+<span class="identifier">local</span> <span class="identifier">BOOST_ROOT</span> <span class="special">=</span> <span class="special">[</span> <span class="identifier">os</span><span class="special">.</span><span class="identifier">environ</span> <span class="identifier">BOOST_ROOT</span> <span class="special">]</span> <span class="special">;</span>
+<span class="identifier">project</span> 
+    <span class="special">:</span> <span class="identifier">requirements</span>
+      <span class="special">&lt;</span><span class="identifier">include</span><span class="special">&gt;../../../</span>
+      <span class="special">&lt;</span><span class="identifier">include</span><span class="special">&gt;</span>#<span class="special">(</span><span class="identifier">BOOST_ROOT</span><span class="special">)</span>
+    <span class="special">:</span>
+    <span class="special">;</span>
+
+<span class="identifier">exe</span> <span class="identifier">HelloWorld</span> <span class="special">:</span> <span class="identifier">main</span><span class="special">.</span><span class="identifier">cpp</span> <span class="special">;</span>
+<span class="identifier">lib</span> <span class="identifier">HelloWorldLib</span> <span class="special">:</span> <span class="identifier">hello_world</span><span class="special">.</span><span class="identifier">cpp</span> <span class="special">:</span> <span class="special">&lt;</span><span class="identifier">link</span><span class="special">&gt;</span><span class="identifier">shared</span> <span class="special">;</span>
+<span class="identifier">install</span> <span class="special">../</span><span class="identifier">bin</span> <span class="special">:</span> <span class="identifier">HelloWorld</span> <span class="identifier">HelloWorldLib</span> <span class="special">;</span>
+</pre>
+<p>
+        If you use another build system, you'll need to make sure that the output
+        shared library (dll, so, dylib etc.) is renamed correctly.
+      </p>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><small>Copyright © 2007 Jeremy Pack</small></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../tutorials.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../tutorials.html"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="tutorial02.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

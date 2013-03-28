@@ -1,0 +1,175 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1">
+<title>Tutorial 2</title>
+<link rel="stylesheet" href="../../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.72.0">
+<link rel="start" href="../../index.html" title="Chapter 1. Boost.Extension 1.0">
+<link rel="up" href="../tutorials.html" title="Tutorials">
+<link rel="prev" href="tutorial01.html" title="Tutorial 1">
+<link rel="next" href="tutorial03.html" title="Tutorial 3">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%">
+<td valign="top"><img alt="Boost C++ Libraries" width="277" height="86" src="../../../../boost.png"></td>
+<td align="center"><a href="../../../../index.htm">Home</a></td>
+<td align="center"><a href="../../libraries.html">Libraries</a></td>
+<td align="center"><a href="../../../../people/people.htm">People</a></td>
+<td align="center"><a href="../../../../more/faq.htm">FAQ</a></td>
+<td align="center"><a href="../../../../more/index.htm">More</a></td>
+</table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="tutorial01.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../tutorials.html"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="tutorial03.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+<div class="section" lang="en">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="boost_extension.tutorials.tutorial02"></a> Tutorial 2</h3></div></div></div>
+<p>
+        This tutorial shows more advanced class loading. The example described here
+        is contrived, and such a convoluted design is not used as an example of good
+        object-oriented program, but as a way to illustrate some of the possibilities
+        with this library.
+      </p>
+<p>
+        Let's design a class hierarchy based on the following:
+      </p>
+<div class="itemizedlist"><ul type="disc">
+<li>
+          There is a vehicle class
+        </li>
+<li>
+          There is a computer class
+        </li>
+<li>
+          A car is a vehicle
+        </li>
+<li>
+          A boat is a vehicle
+        </li>
+<li>
+          A plane is a vehicle
+        </li>
+<li>
+          A flying_car is a plane and a car
+        </li>
+<li>
+          A car_of_the_future is a flying_car, a boat, and a computer.
+        </li>
+</ul></div>
+<p>
+        In addition, we are not going to have any of these classes be interfaces.
+        They will each have an implementation in a .cpp file. This will require multiple
+        inheritance, as well as virtual inheritance (because otherwise a car_of_the_future
+        would consist of three separate vehicle base classes!).
+      </p>
+<p>
+        In addition, each class will be compiled into a separate shared library.
+        This is not necessary, certainly, but will serve to illustrate some of the
+        more advanced capabilities of the library, as well as some of the techniques
+        necessary in this situation.
+      </p>
+<p>
+        To begin with, let's look at the Jamfile:
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting">
+<span class="identifier">import</span> <span class="identifier">type</span> <span class="special">:</span> <span class="identifier">change</span><span class="special">-</span><span class="identifier">generated</span><span class="special">-</span><span class="identifier">target</span><span class="special">-</span><span class="identifier">suffix</span> <span class="special">;</span>
+<span class="identifier">import</span> <span class="identifier">type</span> <span class="special">:</span> <span class="identifier">change</span><span class="special">-</span><span class="identifier">generated</span><span class="special">-</span><span class="identifier">target</span><span class="special">-</span><span class="identifier">prefix</span> <span class="special">;</span>
+<span class="identifier">type</span><span class="special">.</span><span class="identifier">change</span><span class="special">-</span><span class="identifier">generated</span><span class="special">-</span><span class="identifier">target</span><span class="special">-</span><span class="identifier">suffix</span> <span class="identifier">SHARED_LIB</span> <span class="special">:</span> <span class="special">:</span> <span class="identifier">extension</span> <span class="special">;</span>
+<span class="identifier">type</span><span class="special">.</span><span class="identifier">change</span><span class="special">-</span><span class="identifier">generated</span><span class="special">-</span><span class="identifier">target</span><span class="special">-</span><span class="identifier">prefix</span> <span class="identifier">SHARED_LIB</span> <span class="special">:</span> <span class="special">:</span> <span class="identifier">lib</span> <span class="special">;</span>
+</pre>
+<p>
+      </p>
+<p>
+        First we must rename the generated libraries (this is required for cross-platform
+        use - but the prefix and suffix are arbitrary).
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting">
+<span class="identifier">lib</span> <span class="identifier">Vehicle</span> <span class="special">:</span> <span class="identifier">multiple_inheritance</span><span class="special">/</span><span class="identifier">vehicle</span><span class="special">.</span><span class="identifier">cpp</span> <span class="special">:</span> <span class="special">&lt;</span><span class="identifier">link</span><span class="special">&gt;</span><span class="identifier">shared</span> <span class="special">;</span>
+<span class="identifier">lib</span> <span class="identifier">Car</span> <span class="special">:</span> <span class="identifier">multiple_inheritance</span><span class="special">/</span><span class="identifier">car</span><span class="special">.</span><span class="identifier">cpp</span> <span class="identifier">Vehicle</span> <span class="special">:</span> <span class="special">&lt;</span><span class="identifier">link</span><span class="special">&gt;</span><span class="identifier">shared</span> <span class="special">;</span>
+</pre>
+<p>
+      </p>
+<p>
+        Notice here that the Car library is linked to the Vehicle library - this
+        is necessary because the Car class needs the implementation of the Vehicle
+        class. This is unrelated to the Boost.Extension library, but just a standard
+        requirement when inheriting from shared library classes. The same will be
+        done with the other shared libraries.
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting">
+<span class="identifier">lib</span> <span class="identifier">Plane</span> <span class="special">:</span> <span class="identifier">multiple_inheritance</span><span class="special">/</span><span class="identifier">plane</span><span class="special">.</span><span class="identifier">cpp</span> <span class="identifier">Vehicle</span> <span class="special">:</span> <span class="special">&lt;</span><span class="identifier">link</span><span class="special">&gt;</span><span class="identifier">shared</span> <span class="special">;</span>
+<span class="identifier">lib</span> <span class="identifier">Boat</span> <span class="special">:</span> <span class="identifier">multiple_inheritance</span><span class="special">/</span><span class="identifier">boat</span><span class="special">.</span><span class="identifier">cpp</span> <span class="identifier">Vehicle</span> <span class="special">:</span> <span class="special">&lt;</span><span class="identifier">link</span><span class="special">&gt;</span><span class="identifier">shared</span> <span class="special">;</span>
+<span class="identifier">lib</span> <span class="identifier">Computer</span> <span class="special">:</span> <span class="identifier">multiple_inheritance</span><span class="special">/</span><span class="identifier">computer</span><span class="special">.</span><span class="identifier">cpp</span> <span class="special">:</span> <span class="special">&lt;</span><span class="identifier">link</span><span class="special">&gt;</span><span class="identifier">shared</span> <span class="special">;</span>
+<span class="identifier">lib</span> <span class="identifier">FlyingCar</span> <span class="special">:</span> <span class="identifier">multiple_inheritance</span><span class="special">/</span><span class="identifier">flying_car</span><span class="special">.</span><span class="identifier">cpp</span> <span class="identifier">Plane</span> <span class="identifier">Car</span> <span class="identifier">Vehicle</span> <span class="special">:</span> <span class="special">&lt;</span><span class="identifier">link</span><span class="special">&gt;</span><span class="identifier">shared</span> <span class="special">;</span>
+<span class="identifier">lib</span> <span class="identifier">CarOfTheFuture</span> <span class="special">:</span> 
+  <span class="identifier">multiple_inheritance</span><span class="special">/</span><span class="identifier">car_of_the_future</span><span class="special">.</span><span class="identifier">cpp</span> 
+  <span class="identifier">Plane</span> <span class="identifier">Car</span> <span class="identifier">Vehicle</span> 
+  <span class="identifier">FlyingCar</span> <span class="identifier">Computer</span> <span class="identifier">Boat</span> 
+  <span class="special">:</span> 
+  <span class="special">&lt;</span><span class="identifier">link</span><span class="special">&gt;</span><span class="identifier">shared</span> 
+<span class="special">;</span>
+
+<span class="identifier">install</span> <span class="special">../</span><span class="identifier">bin</span> <span class="special">:</span> 
+  <span class="identifier">HelloWorld</span> <span class="identifier">HelloWorldLib</span> <span class="identifier">Vehicle</span> <span class="identifier">Boat</span> <span class="identifier">FlyingCar</span> 
+  <span class="identifier">CarOfTheFuture</span> <span class="identifier">MultipleInheritance</span> 
+  <span class="special">:</span>
+  <span class="special">;</span>
+</pre>
+<p>
+      </p>
+<p>
+        Refer to the examples/multiple_inheritance folder for the source code of
+        these classes. Only the most complex will be described here - the rest are
+        similar.
+      </p>
+<p>
+        On the Windows platform, there are special declarations that are required
+        when a dll must use a class that is defined in another dll. For interface
+        only classes this is unnecessary, and is not needed on other platforms. The
+        macros BOOST_EXTENSION_IMPORT_DECL and BOOST_EXTENSION_EXPORT_DECL can be
+        used to insert the proper declaration. This is detailed in the appendix.
+      </p>
+<p>
+        
+</p>
+<pre class="programlisting">
+<span class="preprocessor">#define</span> <span class="identifier">BOOST_EXTENSION_FLYING_CAR_DECL</span> <span class="identifier">BOOST_EXTENSION_IMPORT_DECL</span>
+<span class="preprocessor">#define</span> <span class="identifier">BOOST_EXTENSION_BOAT_DECL</span> <span class="identifier">BOOST_EXTENSION_IMPORT_DECL</span>
+<span class="preprocessor">#define</span> <span class="identifier">BOOST_EXTENSION_COMPUTER_DECL</span> <span class="identifier">BOOST_EXTENSION_IMPORT_DECL</span>
+<span class="preprocessor">#include</span> <span class="string">"flying_car.hpp"</span>
+<span class="preprocessor">#include</span> <span class="string">"boat.hpp"</span>
+<span class="preprocessor">#include</span> <span class="string">"computer.hpp"</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">iostream</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">typeinfo</span><span class="special">&gt;</span>
+<span class="keyword">class</span> <span class="identifier">BOOST_EXTENSION_CAR_OF_THE_FUTURE_DECL</span> 
+  <span class="identifier">car_of_the_future</span> <span class="special">:</span> <span class="keyword">public</span> <span class="identifier">flying_car</span><span class="special">,</span> <span class="keyword">public</span> <span class="identifier">boat</span><span class="special">,</span> <span class="keyword">public</span> <span class="identifier">computer</span>
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="identifier">car_of_the_future</span><span class="special">(</span><span class="keyword">void</span><span class="special">){</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"\nCreated a Car of the Future"</span><span class="special">;}</span>
+  <span class="special">~</span><span class="identifier">car_of_the_future</span><span class="special">(</span><span class="keyword">void</span><span class="special">){</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"\nDestroyed a Car of the Future"</span><span class="special">;}</span>
+  <span class="keyword">virtual</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">string</span> <span class="identifier">list_capabilities</span><span class="special">(</span><span class="keyword">void</span><span class="special">);</span>
+<span class="special">};</span>
+</pre>
+<p>
+      </p>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><small>Copyright © 2007 Jeremy Pack</small></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="tutorial01.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../tutorials.html"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="tutorial03.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

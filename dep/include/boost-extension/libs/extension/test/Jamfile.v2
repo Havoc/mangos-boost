@@ -1,0 +1,23 @@
+using testing ;
+import os ;
+local BOOST_ROOT = [ os.environ BOOST_ROOT ] ;
+project
+    : requirements
+      <library>$(BOOST_ROOT)libs/test/build//boost_unit_test_framework/<link>shared
+      # <source>auto_test_main.cpp
+      <include>../../../
+      <include>$(BOOST_ROOT)
+      <define>BOOST_TEST_NO_AUTO_LINK=1
+    :
+    ;
+
+
+test-suite extension_tests_all
+: [ run factory_test.cpp ] 
+  [ run zone_test.cpp ] 
+  [ run construction.cpp ]
+  [ run extension_test.cpp ]
+  [ run counted_factory_test.cpp ]
+  [ run registry_test.cpp ]
+: 
+;

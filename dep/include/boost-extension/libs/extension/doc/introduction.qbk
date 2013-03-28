@@ -1,0 +1,23 @@
+[section:introduction Introduction]
+Wrappers for loading classes from linked libraries to extend the functionality 
+of a program. Created to ease the creation of plugins.
+
+The Boost.Extension library has been developed to ease the development of 
+plugins and similar extensions to software. Classes can be made available from 
+linked libraries and loaded automatically by the application. 
+	
+The documentation is completely incomplete. Sorry. Look at tutorial #1 for 
+examples of basic usage, and tutorial #2 for examples of advanced usage.  
+  
+Note the following:
+
+
+
+# Multiple and virtual inheritance are supported
+# No macros are currently used (besides those required by Windows for exported functions) 
+# Only one external function required per shared library to export classes
+# RTTI is used by default, but it is possible to use user-defined type identifications.
+# Classes do not need to be modified to be loadable
+
+
+[endsect]

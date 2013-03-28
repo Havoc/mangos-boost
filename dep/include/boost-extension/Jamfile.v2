@@ -1,0 +1,8 @@
+import os ;
+local BOOST_ROOT = [ os.environ BOOST_ROOT ] ;
+
+
+import modules ;
+import set ;
+import stage ;
+import package ;

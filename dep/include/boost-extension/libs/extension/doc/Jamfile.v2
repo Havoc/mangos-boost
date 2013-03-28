@@ -1,0 +1,17 @@
+using quickbook ;
+xml extension : extension.qbk : : :  
+         <xsl:param>toc.max.depth=5
+         <xsl:param>toc.section.depth=5
+        <xsl:param>chunk.section.depth=5 ;
+boostbook standalone
+    :
+        extension
+    :
+      <xsl:param>generate.section.toc.level=3
+        <xsl:param>chunk.first.sections=1
+        <xsl:param>admon.graphics=1
+
+    ;
+
+install html : ../../../doc/html/boostbook.css ;
+install ../ : ../../../boost.png ;

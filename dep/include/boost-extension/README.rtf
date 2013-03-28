@@ -1,0 +1,134 @@
+{\rtf1\mac\ansicpg10000\cocoartf824\cocoasubrtf420
+{\fonttbl\f0\fswiss\fcharset77 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural\pardirnatural
+
+\f0\fs24 \cf0 Currently, this readme only consists of an e-mail that I sent to the Boost developer's mailing list:\
+\
+\
+\
+I wrote to this list a couple of months ago with a library to ease the creation of plugins, calling it (for lack of a better name), the Boost Extension library.\
+\
+Based on the discussions the last time I wrote to this list and on a number of very helpful reviews of my original API, I've redesigned the API from the ground up. The library will be posted to http://sourceforge.net/projects/boost-extension/ by tomorrow (Saturday). Currently, the old version of the library is there (not much documentation - just the source code in the repository). I've also provided examples at the bottom of this e-mail.\
+\
+Those of you who are interested, please evaluate my design, remembering the following:\
+\
+1 - The documentation will not be present for a few days - since the entire API is different, it all needs to be updated.\
+2 - In many parts, the source code is not polished.\
+\
+The primary information I'd like from you is:\
+\
+1 - What parts of the design don't make sense or are unclear?\
+2 - What capabilities are lacking? What do you wish it could do?\
+3 - Are there ways the API could be more clear or concise?\
+4 - Can you think of a better name?\
+5 - Are there any test cases you'd like to see?\
+\
+I have looked at a number of similar libraries while designing this one, including:\
+\
+http://yallara.cs.rmit.edu.au/~aholkner/dynload/index.html\
+http://www.flipcode.com/cgi-bin/fcarticles.cgi?show=64015\
+http://www.crystalclearsoftware.com/cgi-bin/boost_wiki/wiki.pl?Boost.Plugin\
+http://boost.cvs.sourceforge.net/boost-sandbox/boost-sandbox/libs/plugin/\
+http://tinyurl.com/k2mf4\
+http://s11n.net/download/#class_loader\
+\
+Why I chose to make my own implementation:\
+\
+1 - Macros are (usually) evil. Templates are good.\
+2 - I didn't want to have to change my header files to make a class loadable.\
+3 - I wanted clear and concise syntax.\
+4 - I wanted thread-safe functionality without requiring concurrency control. (i.e. no singletons, no global objects etc.)\
+\
+Features of my current implementation:\
+\
+1 - Only one macro is required - a macro that declares a function to be exported in the dll for Windows.\
+2 - Headers only\
+3 - No dependencies on non-standard libraries for basic operation. Optional convenience capabilities (like loading all of the linked libraries in a directory) require linking to the Boost.Filesystem library though.\
+4 - No global or static variables are used - all classes are as thread safe as the standard library.\
+5 - Arbitrary information (in arbitrary format) can be passed by a plugin back to the loading application (version information, capability lists, etc.)\
+6 - Classes can be made loadable without modification - each of the libraries that I listed above requires information to be stored in the header file of the class. This does not.\
+7 - Only one function is required to be external (and it can have basically any name and format desired).\
+8 - Provides for loading multiple constructors for a single class (currently, the maximum is six arbitrary arguments).\
+9 - Tested on OS X and Windows - theoretically, it should work on other versions of Windows as well as any *nix operating systems providing dlopen (which is, I believe, basically all of them).\
+10 - Works with virtual base classes, multiple inheritance, the dreaded diamond, and just about every other possible inheritance scheme I've been able to think of without requiring any special work (besides the standard difficulties inherent in complicated multiple inheritance structures).\
+11 - Local classes can be added to the constructor lists. In fact, the class loading and linked library portions of the Extensions library are completely separate - the class loader (the extensions::factory_map class) does not care where the constructors are coming from, and the extensions::linked_library class can call arbitrary functions from a linked library.\
+\
+Drawbacks:\
+\
+1 - The current implementation requires RTTI. Calling constructors introduces only the normal function pointer overhead, but generating the list of constructors initially requires the RTTI. I plan to include an option to use a non RTTI solution, but am still deciding on the cleanest way to do it while preserving all library functionality.\
+\
+Demonstration: (sorry for the really long e-mail - consider this your documentation)\
+--------------------------------\
+// word.hpp:\
+// include guards omitted for conciseness\
+class word // this doesn't have to be an abstract base class\
+\{\
+public:\
+  virtual ~word()\{\}\
+  virtual const char * get_val()\{return "";\}\
+\};\
+\
+-----------------------------------\
+// HelloWorld.cpp:\
+//  This file is compiled into a linked library\
+#include "word.hpp"\
+#include <boost/extension/factory_map.hpp>\
+\
+class world : public word\
+\{\
+public:\
+  virtual const char * get_val()\{return "world!";\}\
+\};\
+class hello : public word\
+\{\
+public:\
+  virtual const char * get_val()\{return "hello";\}\
+\};\
+BOOST_EXTENSION_EXTERNAL void extension_export_word(boost::extensions::factory_map & z)\
+\{\
+  z.add<hello, word, int>(1);\
+  z.add<world, word, int>(2);\
+\}\
+--------------------------------------\
+// main.cpp:\
+// This file is compiled into an executable\
+\
+#include "word.hpp"\
+#include <iostream>\
+#include <boost/extension/filesystem.hpp> // I'm using functionality that requires the\
+                                                               // Boost Filesystem library.\
+int main()\
+\{\
+  using namespace boost::extensions;\
+  //  Create the factory_map object - it will hold all of the available\
+  //  constructors. Multiple zones can be constructed.\
+  factory_map twilight;\
+  //  Load all libraries in the directory ./ and use the function (declared with extern "C")\
+  //  called extension_export_word. Load the constructors and information into the factory_map.\
+  load_all_libraries(twilight, "./", "extension_export_word");\
+  //  Get a reference to the list of constructors.\
+  //  Note that the factories can be copied just fine - meaning that the factory list\
+  //  can be copied from the factory_map object into a different data structure, and the factory_map\
+  //  can be destroyed.\
+  std::list<factory<word, int> > & factory_list = twilight.get<word, int>();\
+  if (factory_list.size() < 2)\
+    std::cout << "Error - the classes were not found.";\
+  for (std::list<factory<word, int> >::iterator current_word = factory_list.begin();\
+       current_word != factory_list.end(); ++current_word)\
+  \{\
+    //  Using auto_ptr to avoid needing delete. Using smart_ptrs is recommended.\
+    //  Note that this has a zero argument constructor - currently constructors\
+    //  with up to six arguments can be used.\
+    std::auto_ptr<word> word_ptr(current_word->create());\
+    std::cout << word_ptr->get_val() << " ";\
+  \}\
+  return 0;\
+\}\
+\
+--------------------------\
+\
+Thanks for your time!\
+\
+Jeremy Pack\
+rostovpack-at-gmail.com}

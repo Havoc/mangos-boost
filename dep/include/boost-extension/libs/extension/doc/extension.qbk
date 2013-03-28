@@ -1,0 +1,25 @@
+[library Boost.Extension
+    [quickbook 1.3]
+    [version 1.0]
+    [copyright 2007 Jeremy Pack]
+    [purpose Factory management and facilities for using shared libraries]
+    [license
+        Distributed under the Boost Software License, Version 1.0.
+        (See accompanying file LICENSE_1_0.txt or copy at
+        [@http://www.boost.org/LICENSE_1_0.txt http://www.boost.org/LICENSE_1_0.txt])
+    ]
+    [category Programming Interfaces]
+    [last-revision $Date: 2007/4/30 12:00:00 $]
+]
+
+
+[def __linked_library [link boost_extension.linked_library linked_library]]
+[def __zone [link boost_extension.factory_map factory_map]]
+[def __factory [link boost_extension.factory factory]]
+
+[include introduction.qbk]
+[include tutorials.qbk]
+[include factories.qbk]
+[include shared_libraries.qbk]
+[include performance_analysis.qbk]
+[include appendices.qbk]

@@ -1,0 +1,27 @@
+[section:faq FAQ]
+
+Question: What if I have multiple versions of the same interface (I've added new
+member functions as they've become necessary), and I want to keep track of which
+version is implemented by different plugins?
+  
+Answer: The simplest way is to change the name of your interface (or the 
+namespace it is in) each time its contents change. This is actually what I would
+recommend. However, it is also possible to include such information as part 
+of the `factory`. A `factory` can contain arbitrary information about the plugin
+that it loads through the Info type. In the `hello_world` sample, the `Info` 
+type is an `int`, and the `hello` class has a number (it could be a version) of
+1, and the `world` class has a version of 2. In the multiple_inheritance sample,
+this type is a string. This will be detailed in greater detail in this 
+documentation.
+
+Question: What if I want to have a library close automatically when I've
+destroyed all of the plugins in it?
+
+Answer: Wait for the `registry` class - which is almost done. It will take care
+of it. It is possible to do this with a `factory_map` currently, but the 
+`registry` class will automate the process.
+
+Question: 
+
+
+[endsect]
