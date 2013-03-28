@@ -21,7 +21,7 @@ BOOST_EXTENSIONS_IMPL_NAMESPACE_BEGIN
   typedef FARPROC generic_function_ptr;
 
   inline bool is_library(const char * file_name) {
-      int len = strlen(file_name);
+      size_t len = strlen(file_name);
       return (len > 3 &&  file_name[len-4] == '.'
           && file_name[len-3] == 'd' && file_name[len-2] == 'l' && file_name[len-1] == 'l');
   }
@@ -52,7 +52,7 @@ BOOST_EXTENSIONS_IMPL_NAMESPACE_BEGIN
 
   inline bool is_library(const char * file_name)
   {
-    int len = strlen(file_name);
+    size_t len = strlen(file_name);
     return ((len > 5 && file_name[len-7] == '.' && file_name[len-6] == 'b' && file_name[len-5] == 'u' &&
                      file_name[len-4] == 'n' && file_name[len-3] == 'd' && file_name[len-2] == 'l' &&
                      file_name[len-1] == 'e') || (len > 4 && file_name[len-6] == '.' && 
@@ -68,7 +68,7 @@ BOOST_EXTENSIONS_IMPL_NAMESPACE_END
 BOOST_EXTENSIONS_IMPL_NAMESPACE_BEGIN
 
   inline bool is_library(const char * file_name) {
-    int len = strlen(file_name);
+    size_t len = strlen(file_name);
     return (len > 2 && file_name[len-3] == '.'
         && file_name[len-2] == 's' && file_name[len-1] == 'o');
   }
