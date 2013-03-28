@@ -21,13 +21,12 @@
 
 #include <sys/types.h>
 
-#include <ace/Basic_Types.h>
 #include <ace/Default_Constants.h>
-#include <ace/OS_NS_dlfcn.h>
-#include <ace/ACE_export.h>
 
 #include <boost/cstdint.hpp>
 #include <boost/static_assert.hpp>
+
+#include <boost-extension/boost/extension/impl/linked_library.hpp>
 
 #include <boost/detail/endian.hpp>
 
@@ -46,14 +45,19 @@
 #  endif
 #endif // MANGOS_ENDIAN
 
-typedef ACE_SHLIB_HANDLE MANGOS_LIBRARY_HANDLE;
+typedef boost::extensions::impl::library_handle MANGOS_LIBRARY_HANDLE;
 
 #define MANGOS_SCRIPT_NAME "mangosscript"
-#define MANGOS_SCRIPT_SUFFIX ACE_DLL_SUFFIX
-#define MANGOS_SCRIPT_PREFIX ACE_DLL_PREFIX
-#define MANGOS_LOAD_LIBRARY(libname)    ACE_OS::dlopen(libname)
-#define MANGOS_CLOSE_LIBRARY(hlib)      ACE_OS::dlclose(hlib)
-#define MANGOS_GET_PROC_ADDR(hlib,name) ACE_OS::dlsym(hlib,name)
+#define MANGOS_SCRIPT_SUFFIX "." BOOST_EXTENSION_LIBRARY_EXTENSION
+// boost::extensions::shared_library code missing prefix define
+#ifndef BOOST_WINDOWS
+#   define MANGOS_SCRIPT_PREFIX "lib"
+#else
+#   define MANGOS_SCRIPT_PREFIX ""
+#endif
+#define MANGOS_LOAD_LIBRARY(libname)    boost::extensions::impl::load_shared_library(libname)
+#define MANGOS_CLOSE_LIBRARY(hlib)      boost::extensions::impl::close_shared_library(hlib)
+#define MANGOS_GET_PROC_ADDR(hlib,name) boost::extensions::impl::get_function(hlib,name)
 
 #define MANGOS_PATH_MAX PATH_MAX                            // ace/os_include/os_limits.h -> ace/Basic_Types.h
 
