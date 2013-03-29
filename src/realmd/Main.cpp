@@ -166,7 +166,7 @@ extern int main(int argc, char** argv)
     }
 #endif
 
-    if (!sConfig.SetSource(cfg_file))
+    if (!sConfig.SetSource(cfg_file, "RealmdConf"))
     {
         sLog.outError("Could not find configuration file %s.", cfg_file);
         Log::WaitBeforeContinueIfNeed();
