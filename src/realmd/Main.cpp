@@ -35,9 +35,9 @@
 #include <openssl/opensslv.h>
 #include <openssl/crypto.h>
 
-#include <ace/Get_Opt.h>
 #include <ace/ACE.h>
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
+#include <boost/program_options.hpp>
 #include <boost/thread.hpp>
 #include <boost/version.hpp>
 #include <sstream>
@@ -69,100 +69,102 @@ bool stopEvent = false;                                     ///< Setting it to t
 DatabaseType LoginDatabase;                                 ///< Accessor to the realm server database
 
 /// Print out the usage string for this program on the console.
-void usage(const char* prog)
+void usage(boost::program_options::options_description const& desc, const char* prog)
 {
-    sLog.outString("Usage: \n %s [<options>]\n"
-                   "    -v, --version            print version and exist\n\r"
-                   "    -c config_file           use config_file as configuration file\n\r"
-#ifdef WIN32
-                   "    Running as service functions:\n\r"
-                   "    -s run                   run as service\n\r"
-                   "    -s install               install service\n\r"
-                   "    -s uninstall             uninstall service\n\r"
-#else
-                   "    Running as daemon functions:\n\r"
-                   "    -s run                   run as daemon\n\r"
-                   "    -s stop                  stop daemon\n\r"
-#endif
-                   , prog);
+    std::ostringstream ss;
+    ss << desc;
+    sLog.outString("Usage: \n %s [<options>]\n%s", prog, ss.str().c_str());
 }
 
 /// Launch the realm server
 extern int main(int argc, char** argv)
 {
     ///- Command line parsing
-    char const* cfg_file = _REALMD_CONFIG;
+    std::string cfg_file;
+    std::string serviceDaemonMode;
 
-    char const* options = ":c:s:";
-
-    ACE_Get_Opt cmd_opts(argc, argv, options);
-    cmd_opts.long_option("version", 'v');
-
-    char serviceDaemonMode = '\0';
-
-    int option;
-    while ((option = cmd_opts()) != EOF)
-    {
-        switch (option)
-        {
-            case 'c':
-                cfg_file = cmd_opts.opt_arg();
-                break;
-            case 'v':
-                printf("%s\n", _FULLVERSION(REVISION_DATE, REVISION_TIME, REVISION_NR, REVISION_ID));
-                return 0;
-
-            case 's':
-            {
-                const char* mode = cmd_opts.opt_arg();
-
-                if (!strcmp(mode, "run"))
-                    serviceDaemonMode = 'r';
+    boost::program_options::options_description description("Allowed options");
+    description.add_options()
+        ("version,v", "print version and exit")
+        ("help,h", "print commandline help and exit")
+        ("config,c", boost::program_options::value<std::string>(&cfg_file)->default_value(_REALMD_CONFIG), "use as configuration file")
 #ifdef WIN32
-                else if (!strcmp(mode, "install"))
-                    serviceDaemonMode = 'i';
-                else if (!strcmp(mode, "uninstall"))
-                    serviceDaemonMode = 'u';
+        ("service,s", boost::program_options::value<std::string>(&serviceDaemonMode), "running as service, arg functions: run, install, uninstall")
 #else
-                else if (!strcmp(mode, "stop"))
-                    serviceDaemonMode = 's';
+        ("service,s", boost::program_options::value<std::string>(&serviceDaemonMode), "running as daemon, arg functions: run, stop")
 #endif
-                else
-                {
-                    sLog.outError("Runtime-Error: -%c unsupported argument %s", cmd_opts.opt_opt(), mode);
-                    usage(argv[0]);
-                    Log::WaitBeforeContinueIfNeed();
-                    return 1;
-                }
+        ;
+
+    // parse option
+    boost::program_options::variables_map vm;
+
+    try {
+        boost::program_options::store(boost::program_options::command_line_parser(argc, argv).
+            options(description).run(), vm);
+        boost::program_options::notify(vm);
+    }
+    catch(boost::program_options::unknown_option const& ex)
+    {
+        sLog.outError("Runtime-Error: unknown option %s", ex.get_option_name().c_str());
+        usage(description, argv[0]);
+        Log::WaitBeforeContinueIfNeed();
+        return 1;
+    }
+    catch(boost::program_options::invalid_command_line_syntax const& ex)
+    {
+        sLog.outError("Runtime-Error: invalid syntax for option %s", ex.get_option_name().c_str());
+        usage(description, argv[0]);
+        Log::WaitBeforeContinueIfNeed();
+        return 1;
+    }
+
+    if (vm.count("version"))
+    {
+        printf("%s\n", _FULLVERSION(REVISION_DATE, REVISION_TIME, REVISION_NR, REVISION_ID));
+        return 0;
+    }
+
+    if (vm.count("help"))
+    {
+        usage(description, argv[0]);
+        return 0;
+    }
+
+    if (!serviceDaemonMode.empty())
+    {
+#ifdef WIN32
+        char const* const serviceModes[] =  { "run", "install", "uninstall", NULL };
+#else
+        char const* const serviceModes[] =  { "run", "stop", NULL };
+#endif
+        char const* const* mode_ptr = &serviceModes[0];
+        for(; *mode_ptr != NULL; ++mode_ptr)
+            if (*mode_ptr == serviceDaemonMode)
                 break;
-            }
-            case ':':
-                sLog.outError("Runtime-Error: -%c option requires an input argument", cmd_opts.opt_opt());
-                usage(argv[0]);
-                Log::WaitBeforeContinueIfNeed();
-                return 1;
-            default:
-                sLog.outError("Runtime-Error: bad format of commandline arguments");
-                usage(argv[0]);
-                Log::WaitBeforeContinueIfNeed();
-                return 1;
+
+        if (!*mode_ptr)
+        {
+            sLog.outError("Runtime-Error: -s unsupported argument %s", serviceDaemonMode.c_str());
+            usage(description, argv[0]);
+            Log::WaitBeforeContinueIfNeed();
+            return 1;
         }
     }
 
 #ifdef WIN32                                                // windows service command need execute before config read
-    switch (serviceDaemonMode)
+    switch (serviceDaemonMode[0])
     {
-        case 'i':
-            if (WinServiceInstall())
-                sLog.outString("Installing service");
-            return 1;
-        case 'u':
-            if (WinServiceUninstall())
-                sLog.outString("Uninstalling service");
-            return 1;
-        case 'r':
-            WinServiceRun();
-            break;
+    case 'i':
+        if (WinServiceInstall())
+            sLog.outString("Installing service");
+        return 1;
+    case 'u':
+        if (WinServiceUninstall())
+            sLog.outString("Uninstalling service");
+        return 1;
+    case 'r':
+        WinServiceRun();
+        break;
     }
 #endif
 
