@@ -10,6 +10,12 @@
 #include <ace/Unbounded_Queue.h>
 #include <ace/Message_Block.h>
 
+#include <boost/config.hpp>
+#include <boost/version.hpp>
+#include <boost/asio.hpp>
+#include <boost/date_time.hpp>
+#include <boost/thread.hpp>
+
 #include "Common.h"
 
 #include "MapManager.h"
