@@ -15,15 +15,14 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
+set(backtrace_SRCS
+    libs\backtrace\src\backtrace.cpp
+)
 
-if(NOT (TBB_USE_EXTERNAL OR USE_STD_MALLOC))
-  add_subdirectory(tbb)
-endif()
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
-if(NOT ACE_USE_EXTERNAL)
-  add_subdirectory(ACE_wrappers)
-endif()
-
-add_subdirectory(recastnavigation)
-add_subdirectory(backtrace)
-add_subdirectory(src)
+add_library(backtrace STATIC
+  ${backtrace_SRCS}
+)

@@ -69,6 +69,7 @@ target_link_libraries(${EXECUTABLE_NAME}
   framework
   g3dlite
   gsoap
+  backtrace
   ${Boost_LIBRARIES}
   ${ACE_LIBRARIES}
 )

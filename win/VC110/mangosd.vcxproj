@@ -488,6 +488,9 @@
     <ProjectReference Include="..\..\dep\recastnavigation\Detour\win\VC110\Detour.vcxproj">
       <Project>{72bdf975-4d4a-42c7-b2c4-f9ed90a2abb6}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\dep\backtrace\win\VC110\backtrace.vcxproj">
+      <Project>{72bdf975-4d4a-42c7-b2c4-f9ed90a2abb6}</Project>
+    </ProjectReference>
     <ProjectReference Include="game.vcxproj">
       <Project>{1dc6c4da-a028-41f3-877d-d5400c594f88}</Project>
     </ProjectReference>

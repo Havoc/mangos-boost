@@ -19,22 +19,16 @@
 #include "ByteBuffer.h"
 #include "Log.h"
 
+#include "../backtrace/boost/backtrace.hpp"
+
 void ByteBufferException::PrintPosError() const
 {
-    char const* traceStr;
-
-#ifdef HAVE_ACE_STACK_TRACE_H
-    ACE_Stack_Trace trace;
-    traceStr = trace.c_str();
-#else
-    traceStr = NULL;
-#endif
+    boost::backtrace trace;
 
     sLog.outError(
         "Attempted to %s in ByteBuffer (pos: " SIZEFMTD " size: " SIZEFMTD ") "
-        "value with size: " SIZEFMTD "%s%s",
-        (add ? "put" : "get"), pos, size, esize,
-        traceStr ? "\n" : "", traceStr ? traceStr : "");
+        "value with size: " SIZEFMTD "\n%s",
+        (add ? "put" : "get"), pos, size, esize,trace.trace().c_str());
 }
 
 void ByteBuffer::print_storage() const

@@ -147,9 +147,6 @@ if(ACE_USE_EXTERNAL)
       "This project requires ACE installed when ACE_USE_EXTERNAL is set. Please download the ACE Micro Release Kit from http://download.dre.vanderbilt.edu/ and install it. If this script didn't find ACE and it was correctly installed please set ACE_ROOT to the correct path."
     )
   endif()
-  if(EXISTS ${ACE_INCLUDE_DIR}/ace/Stack_Trace.h)
-    set(HAVE_ACE_STACK_TRACE_H ON) # config.h.cmake
-  endif()
 else()
   include(cmake/ImportACE.cmake)
 endif()

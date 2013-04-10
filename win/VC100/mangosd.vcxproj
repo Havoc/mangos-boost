@@ -491,6 +491,9 @@
     <ProjectReference Include="shared.vcxproj">
       <Project>{90297c34-f231-4df4-848e-a74bcc0e40ed}</Project>
     </ProjectReference>
+    <ProjectReference Include="..\..\dep\backtrace\win\VC100\backtrace.vcxproj">
+      <Project>{79F0708C-DD1E-4F8B-A221-50667647FA10}</Project>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

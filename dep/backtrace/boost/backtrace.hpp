@@ -84,6 +84,7 @@ namespace boost {
         std::vector<void *> frames_;
     };
 
+    /* CMaNGOS: not used in cmanagos and conflict with boost library declarations
     class exception : public std::exception, public backtrace {
     public:
     };
@@ -154,7 +155,7 @@ namespace boost {
         {
         }
     };
- 
+    CMaNGOS exclude end */ 
     namespace details {
         class trace_manip {
         public:
