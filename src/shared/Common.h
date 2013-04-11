@@ -94,6 +94,8 @@
 #include <ace/Thread_Mutex.h>
 #include <ace/OS_NS_arpa_inet.h>
 
+#include <boost/cstdint.hpp>
+
 // Old ACE versions (pre-ACE-5.5.4) not have this type (add for allow use at Unix side external old ACE versions)
 #if PLATFORM != PLATFORM_WINDOWS
 #  ifndef ACE_OFF_T
@@ -132,21 +134,25 @@ typedef off_t ACE_OFF_T;
 #  define strnicmp strncasecmp
 
 #  define I32FMT "%08X"
-#  if ACE_SIZEOF_LONG == 8
-#    define I64FMT "%016lX"
-#  else
+#  if ULONG_MAX == 0xffffffff /* long == int32 */
 #    define I64FMT "%016llX"
-#  endif /* ACE_SIZEOF_LONG == 8 */
+#  else
+#    define I64FMT "%016lX"
+#  endif
 
 #endif
 
-#define UI64FMTD ACE_UINT64_FORMAT_SPECIFIER
-#define UI64LIT(N) ACE_UINT64_LITERAL(N)
+#define UI64FMTD "%llu"
+#define UI64LIT(N) UINT64_C(N)
 
-#define SI64FMTD ACE_INT64_FORMAT_SPECIFIER
-#define SI64LIT(N) ACE_INT64_LITERAL(N)
+#define SI64FMTD "%lld"
+#define SI64LIT(N) INT64_C(N)
 
-#define SIZEFMTD ACE_SIZE_T_FORMAT_SPECIFIER
+#if COMPILER == COMPILER_MICROSOFT || COMPILER == COMPILER_BORLAND
+#  define SIZEFMTD "%zu"
+#else
+#  define SIZEFMTD "%Iu"
+#endif
 
 inline float finiteAlways(float f) { return finite(f) ? f : 0.0f; }
 
@@ -233,7 +239,7 @@ inline char* mangos_strdup(const char* source)
     return dest;
 }
 
-// we always use stdlibc++ std::max/std::min, undefine some not C++ standard defines (Win API and some pother platforms)
+// we always use stdlibc++ std::max/std::min, undefine some not C++ standard defines (Win API and some other platforms)
 #ifdef max
 #  undef max
 #endif
