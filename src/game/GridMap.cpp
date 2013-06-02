@@ -1182,9 +1182,9 @@ float TerrainInfo::GetWaterLevel(float x, float y, float z, float* pGround /*= N
 
 //////////////////////////////////////////////////////////////////////////
 
-#define CLASS_LOCK MaNGOS::ClassLevelLockable<TerrainManager, ACE_Thread_Mutex>
+#define CLASS_LOCK MaNGOS::ClassLevelLockable<TerrainManager, boost::mutex>
 INSTANTIATE_SINGLETON_2(TerrainManager, CLASS_LOCK);
-INSTANTIATE_CLASS_MUTEX(TerrainManager, ACE_Thread_Mutex);
+INSTANTIATE_CLASS_MUTEX(TerrainManager, boost::mutex);
 
 TerrainManager::TerrainManager()
 {

@@ -19,13 +19,21 @@
 #ifndef LOCKEDQUEUE_H
 #define LOCKEDQUEUE_H
 
-#include <ace/Guard_T.h>
-#include <ace/Thread_Mutex.h>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/lock_guard.hpp>
 #include <deque>
 #include <assert.h>
 #include "Errors.h"
 
-namespace ACE_Based
+// Temporary boost-conversion defines for later replacement to proper boost cases or adding custom well named cases
+#define MANGOS_LOCK_ACTION(OBJ, LOCK, ACTION, REACTION) \
+    LockType::scoped_try_lock OBJ (LOCK, boost::try_to_lock); \
+    if (OBJ) { ACTION; } else { REACTION; }
+
+#define MANGOS_LOCK_REACTION(OBJ, LOCK, REACTION)  MANGOS_LOCK_ACTION(OBJ, LOCK, ;, REACTION)
+#define MANGOS_LOCK_RETURN(OBJ, LOCK, RETURN)      MANGOS_LOCK_REACTION(OBJ, LOCK, return RETURN)
+
+namespace MaNGOS
 {
     template <class T, class LockType, typename StorageType = std::deque<T> >
     class LockedQueue
@@ -55,14 +63,14 @@ namespace ACE_Based
             //! Adds an item to the queue.
             void add(const T& item)
             {
-                ACE_Guard<LockType> g(this->_lock);
+                boost::lock_guard<LockType> g(this->_lock);
                 _queue.push_back(item);
             }
 
             //! Gets the next result in the queue, if any.
             bool next(T& result)
             {
-                ACE_GUARD_RETURN(LockType, g, this->_lock, false);
+                MANGOS_LOCK_RETURN(g, this->_lock, false);
 
                 if (_queue.empty())
                     return false;
@@ -76,7 +84,7 @@ namespace ACE_Based
             template<class Checker>
             bool next(T& result, Checker& check)
             {
-                ACE_GUARD_RETURN(LockType, g, this->_lock, false);
+                MANGOS_LOCK_RETURN(g, this->_lock, false);
 
                 if (_queue.empty())
                     return false;
@@ -102,14 +110,14 @@ namespace ACE_Based
             //! Cancels the queue.
             void cancel()
             {
-                ACE_Guard<LockType> g(this->_lock);
+                boost::lock_guard<LockType> g(this->_lock);
                 _canceled = true;
             }
 
             //! Checks if the queue is cancelled.
             bool cancelled()
             {
-                ACE_Guard<LockType> g(this->_lock);
+                boost::lock_guard<LockType> g(this->_lock);
                 return _canceled;
             }
 
@@ -128,7 +136,7 @@ namespace ACE_Based
             ///! Checks if we're empty or not with locks held
             bool empty()
             {
-                ACE_Guard<LockType> g(this->_lock);
+                boost::lock_guard<LockType> g(this->_lock);
                 return _queue.empty();
             }
     };

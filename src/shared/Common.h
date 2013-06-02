@@ -89,9 +89,7 @@
 #include "Threading.h"
 
 #include <ace/Basic_Types.h>
-#include <ace/Guard_T.h>
-#include <ace/RW_Thread_Mutex.h>
-#include <ace/Thread_Mutex.h>
+#include <boost/thread/mutex.hpp>
 #include <ace/OS_NS_arpa_inet.h>
 
 #include <boost/cstdint.hpp>

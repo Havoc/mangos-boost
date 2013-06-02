@@ -34,6 +34,7 @@
 #include <openssl/bn.h>
 #include <openssl/md5.h>
 
+#include "Policies/Singleton.h"
 #include "Network/ProtocolDefinitions.h"
 #include <boost/enable_shared_from_this.hpp>
 
@@ -45,8 +46,6 @@ class PatchCache
     public:
         ~PatchCache();
         PatchCache();
-
-        static PatchCache* instance();
 
         struct PATCH_INFO
         {
@@ -72,6 +71,8 @@ class PatchCache
         void LoadPatchesInfo();
         Patches patches_;
 };
+
+#define sPatchCache MaNGOS::Singleton<PatchCache>::Instance()
 
 class PatchHandler : public boost::enable_shared_from_this<PatchHandler>
 {

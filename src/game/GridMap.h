@@ -27,6 +27,8 @@
 #include "SharedDefines.h"
 
 #include <boost/atomic.hpp>
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/lock_guard.hpp>
 
 #include <bitset>
 #include <list>
@@ -268,14 +270,14 @@ class MANGOS_DLL_SPEC TerrainInfo : public Referencable<boost::atomic_long>
         // global garbage collection timer
         ShortIntervalTimer i_timer;
 
-        typedef ACE_Thread_Mutex LOCK_TYPE;
-        typedef ACE_Guard<LOCK_TYPE> LOCK_GUARD;
+        typedef boost::mutex LOCK_TYPE;
+        typedef boost::lock_guard<LOCK_TYPE> LOCK_GUARD;
         LOCK_TYPE m_mutex;
         LOCK_TYPE m_refMutex;
 };
 
 // class for managing TerrainData object and all sort of geometry querying operations
-class MANGOS_DLL_DECL TerrainManager : public MaNGOS::Singleton<TerrainManager, MaNGOS::ClassLevelLockable<TerrainManager, ACE_Thread_Mutex> >
+class MANGOS_DLL_DECL TerrainManager : public MaNGOS::Singleton<TerrainManager, MaNGOS::ClassLevelLockable<TerrainManager, boost::mutex> >
 {
         typedef UNORDERED_MAP<uint32,  TerrainInfo*> TerrainDataMap;
         friend class MaNGOS::OperatorNew<TerrainManager>;
@@ -316,7 +318,7 @@ class MANGOS_DLL_DECL TerrainManager : public MaNGOS::Singleton<TerrainManager, 
         TerrainManager(const TerrainManager&);
         TerrainManager& operator=(const TerrainManager&);
 
-        typedef MaNGOS::ClassLevelLockable<TerrainManager, ACE_Thread_Mutex>::Lock Guard;
+        typedef MaNGOS::ClassLevelLockable<TerrainManager, boost::mutex>::Lock Guard;
         TerrainDataMap i_TerrainMap;
 };
 

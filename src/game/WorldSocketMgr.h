@@ -25,24 +25,20 @@
 #ifndef __WORLDSOCKETMGR_H
 #define __WORLDSOCKETMGR_H
 
-#include <ace/Basic_Types.h>
-#include <ace/Singleton.h>
-#include <ace/Thread_Mutex.h>
+#include <boost/thread/recursive_mutex.hpp>
 
 #include <string>
 
+#include "Policies/Singleton.h"
 #include "Network/NetworkManager.h"
 
 
 /// Manages all sockets connected to peers and network threads
-class WorldSocketMgr : public NetworkManager
+class WorldSocketMgr : public NetworkManager, public MaNGOS::Singleton<WorldSocketMgr, MaNGOS::ClassLevelLockable<WorldSocketMgr, boost::recursive_mutex> > 
 {
     public:
         friend class WorldSocket;
-        friend class ACE_Singleton<WorldSocketMgr, ACE_Thread_Mutex>;
-
-        /// Make this class singleton .
-        static WorldSocketMgr* Instance();
+        friend class MaNGOS::OperatorNew<WorldSocketMgr>;
 
     private:
         virtual bool OnSocketOpen( const SocketPtr& sock ) override;

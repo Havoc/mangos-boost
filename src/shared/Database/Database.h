@@ -22,11 +22,12 @@
 #include "Threading.h"
 #include "Utilities/UnorderedMapSet.h"
 #include "Database/SqlDelayThread.h"
-#include <ace/Recursive_Thread_Mutex.h>
 #include "Policies/ThreadingModel.h"
 #include <ace/TSS_T.h>
 
 #include <boost/atomic.hpp>
+#include <boost/thread/lock_guard.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 
 #include "SqlPreparedStatement.h"
 
@@ -70,8 +71,8 @@ class MANGOS_DLL_SPEC SqlConnection
         class Lock
         {
             public:
-                Lock(SqlConnection* conn) : m_pConn(conn) { m_pConn->m_mutex.acquire(); }
-                ~Lock() { m_pConn->m_mutex.release(); }
+                Lock(SqlConnection* conn) : m_pConn(conn) { m_pConn->m_mutex.lock(); }
+                ~Lock() { m_pConn->m_mutex.unlock(); }
 
                 SqlConnection* operator->() const { return m_pConn; }
 
@@ -95,7 +96,7 @@ class MANGOS_DLL_SPEC SqlConnection
         void FreePreparedStatements();
 
     private:
-        typedef ACE_Recursive_Thread_Mutex LOCK_TYPE;
+        typedef boost::recursive_mutex LOCK_TYPE;
         LOCK_TYPE m_mutex;
 
         typedef std::vector<SqlPreparedStatement* > StmtHolder;
@@ -295,8 +296,8 @@ class MANGOS_DLL_SPEC Database
         bool m_bAllowAsyncTransactions;                     ///< flag which specifies if async transactions are enabled
 
         // PREPARED STATEMENT REGISTRY
-        typedef ACE_Thread_Mutex LOCK_TYPE;
-        typedef ACE_Guard<LOCK_TYPE> LOCK_GUARD;
+        typedef boost::mutex LOCK_TYPE;
+        typedef boost::lock_guard<LOCK_TYPE> LOCK_GUARD;
 
         mutable LOCK_TYPE m_stmtGuard;
 

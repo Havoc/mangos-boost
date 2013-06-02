@@ -5,8 +5,6 @@
 #include <ace/SOCK_Stream.h>
 #include <ace/SOCK_Acceptor.h>
 #include <ace/Acceptor.h>
-#include <ace/Thread_Mutex.h>
-#include <ace/Guard_T.h>
 #include <ace/Unbounded_Queue.h>
 #include <ace/Message_Block.h>
 
@@ -15,6 +13,7 @@
 #include <boost/asio.hpp>
 #include <boost/date_time.hpp>
 #include <boost/thread.hpp>
+#include <boost/thread/mutex.hpp>
 
 #include "Common.h"
 

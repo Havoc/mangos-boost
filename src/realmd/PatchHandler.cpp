@@ -34,6 +34,9 @@
 
 #include <boost/bind.hpp>
 
+INSTANTIATE_SINGLETON_1(PatchCache);
+
+
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
 #endif
@@ -147,11 +150,6 @@ PatchCache::~PatchCache()
 PatchCache::PatchCache()
 {
     LoadPatchesInfo();
-}
-
-PatchCache* PatchCache::instance()
-{
-    return ACE_Singleton<PatchCache, ACE_Thread_Mutex>::instance();
 }
 
 void PatchCache::LoadPatchMD5(const char* szFileName)

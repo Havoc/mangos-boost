@@ -22,7 +22,7 @@
 #include "Common.h"
 #include "Platform/Define.h"
 #include "Policies/Singleton.h"
-#include "ace/Thread_Mutex.h"
+#include <boost/thread/mutex.hpp>
 #include <list>
 #include <map>
 #include "Utilities/UnorderedMapSet.h"
@@ -31,6 +31,8 @@
 #include "DBCStores.h"
 #include "ObjectGuid.h"
 #include "PoolManager.h"
+
+#include <boost/thread/mutex.hpp>
 
 struct InstanceTemplate;
 struct MapEntry;
@@ -327,7 +329,7 @@ class DungeonResetScheduler
         ResetTimeQueue m_resetTimeQueue;
 };
 
-class MANGOS_DLL_DECL MapPersistentStateManager : public MaNGOS::Singleton<MapPersistentStateManager, MaNGOS::ClassLevelLockable<MapPersistentStateManager, ACE_Thread_Mutex> >
+class MANGOS_DLL_DECL MapPersistentStateManager : public MaNGOS::Singleton<MapPersistentStateManager, MaNGOS::ClassLevelLockable<MapPersistentStateManager, boost::mutex> >
 {
         friend class DungeonResetScheduler;
     public:                                                 // constructors

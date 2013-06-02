@@ -28,6 +28,8 @@
 #include "Policies/Singleton.h"
 #include "SharedDefines.h"
 
+#include <boost/thread/mutex.hpp>
+
 #include <map>
 #include <set>
 #include <list>
@@ -665,7 +667,7 @@ class World
         static uint32 m_relocation_ai_notify_delay;
 
         // CLI command holder to be thread safe
-        ACE_Based::LockedQueue<CliCommandHolder*, ACE_Thread_Mutex> cliCmdQueue;
+        MaNGOS::LockedQueue<CliCommandHolder*, boost::mutex> cliCmdQueue;
 
         // next daily quests reset time
         time_t m_NextDailyQuestReset;
@@ -677,7 +679,7 @@ class World
 
         // sessions that are added async
         void AddSession_(WorldSession* s);
-        ACE_Based::LockedQueue<WorldSession*, ACE_Thread_Mutex> addSessQueue;
+        MaNGOS::LockedQueue<WorldSession*, boost::mutex> addSessQueue;
 
         // used versions
         std::string m_DBVersion;

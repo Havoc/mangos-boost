@@ -22,7 +22,10 @@
 #include "Common.h"
 #include "Platform/Define.h"
 #include "Policies/Singleton.h"
-#include "ace/Recursive_Thread_Mutex.h"
+
+#include <boost/thread/lock_guard.hpp>
+#include <boost/thread/recursive_mutex.hpp>
+
 #include "Map.h"
 #include "GridStates.h"
 
@@ -48,13 +51,13 @@ struct MANGOS_DLL_DECL MapID
     uint32 nInstanceId;
 };
 
-class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockable<MapManager, ACE_Recursive_Thread_Mutex> >
+class MANGOS_DLL_DECL MapManager : public MaNGOS::Singleton<MapManager, MaNGOS::ClassLevelLockable<MapManager, boost::recursive_mutex> >
 {
         friend class MaNGOS::OperatorNew<MapManager>;
 
-        typedef ACE_Recursive_Thread_Mutex LOCK_TYPE;
-        typedef ACE_Guard<LOCK_TYPE> LOCK_TYPE_GUARD;
-        typedef MaNGOS::ClassLevelLockable<MapManager, ACE_Recursive_Thread_Mutex>::Lock Guard;
+        typedef boost::recursive_mutex LOCK_TYPE;
+        typedef boost::lock_guard<LOCK_TYPE> LOCK_TYPE_GUARD;
+        typedef MaNGOS::ClassLevelLockable<MapManager, LOCK_TYPE>::Lock Guard;
 
     public:
         typedef std::map<MapID, Map* > MapMapType;

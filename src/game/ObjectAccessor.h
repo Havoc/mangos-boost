@@ -22,8 +22,6 @@
 #include "Common.h"
 #include "Platform/Define.h"
 #include "Policies/Singleton.h"
-#include <ace/Thread_Mutex.h>
-#include <ace/RW_Thread_Mutex.h>
 #include "Utilities/UnorderedMapSet.h"
 #include "Policies/ThreadingModel.h"
 
@@ -33,6 +31,10 @@
 #include "Object.h"
 #include "Player.h"
 #include "Corpse.h"
+
+#include <boost/thread/mutex.hpp>
+#include <boost/thread/shared_mutex.hpp>
+#include <boost/thread/shared_lock_guard.hpp>
 
 #include <set>
 #include <list>
@@ -47,9 +49,9 @@ class HashMapHolder
     public:
 
         typedef UNORDERED_MAP<ObjectGuid, T*>   MapType;
-        typedef ACE_RW_Thread_Mutex LockType;
-        typedef ACE_Read_Guard<LockType> ReadGuard;
-        typedef ACE_Write_Guard<LockType> WriteGuard;
+        typedef boost::shared_mutex LockType;
+        typedef boost::shared_lock<LockType> ReadGuard;
+        typedef boost::unique_lock<LockType> WriteGuard;
 
         static void Insert(T* o)
         {
@@ -83,7 +85,7 @@ class HashMapHolder
         static MapType  m_objectMap;
 };
 
-class MANGOS_DLL_DECL ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLevelLockable<ObjectAccessor, ACE_Thread_Mutex> >
+class MANGOS_DLL_DECL ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, MaNGOS::ClassLevelLockable<ObjectAccessor, boost::mutex> >
 {
         friend class MaNGOS::OperatorNew<ObjectAccessor>;
 
@@ -130,7 +132,7 @@ class MANGOS_DLL_DECL ObjectAccessor : public MaNGOS::Singleton<ObjectAccessor, 
 
         Player2CorpsesMapType   i_player2corpse;
 
-        typedef ACE_Thread_Mutex LockType;
+        typedef boost::mutex LockType;
         typedef MaNGOS::GeneralLock<LockType > Guard;
 
         LockType i_playerGuard;
