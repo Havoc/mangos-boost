@@ -23,11 +23,11 @@
 #include "Utilities/UnorderedMapSet.h"
 #include "Database/SqlDelayThread.h"
 #include "Policies/ThreadingModel.h"
-#include <ace/TSS_T.h>
 
 #include <boost/atomic.hpp>
 #include <boost/thread/lock_guard.hpp>
 #include <boost/thread/recursive_mutex.hpp>
+#include <boost/thread/tss.hpp>
 
 #include "SqlPreparedStatement.h"
 
@@ -262,8 +262,7 @@ class MANGOS_DLL_SPEC Database
         };
 
         // per-thread based storage for SqlTransaction object initialization - no locking is required
-        typedef ACE_TSS<Database::TransHelper> DBTransHelperTSS;
-        Database::DBTransHelperTSS m_TransStorage;
+        boost::thread_specific_ptr<TransHelper> m_TransStorage;
 
         ///< DB connections
 

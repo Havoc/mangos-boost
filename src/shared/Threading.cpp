@@ -206,15 +206,14 @@ ACE_hthread_t Thread::currentHandle()
 
 Thread* Thread::current()
 {
-    Thread* _thread = m_ThreadStorage.ts_object();
+    Thread* _thread = *m_ThreadStorage;
     if (!_thread)
     {
         _thread = new Thread();
         _thread->m_iThreadId = Thread::currentId();
         _thread->m_hThreadHandle = Thread::currentHandle();
 
-        Thread* _oldValue = m_ThreadStorage.ts_object(_thread);
-        delete _oldValue;
+        m_ThreadStorage.reset(&_thread);
     }
 
     return _thread;

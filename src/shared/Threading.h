@@ -20,10 +20,11 @@
 #define THREADING_H
 
 #include <ace/Thread.h>
-#include <ace/TSS_T.h>
+
 #include <assert.h>
 
 #include <boost/atomic.hpp>
+#include <boost/thread/tss.hpp>
 
 namespace ACE_Based
 {
@@ -97,8 +98,8 @@ namespace ACE_Based
             ACE_hthread_t m_hThreadHandle;
             Runnable* m_task;
 
-            typedef ACE_TSS<Thread> ThreadStorage;
             // global object - container for Thread class representation of every thread
+            typedef boost::thread_specific_ptr<Thread*> ThreadStorage;
             static ThreadStorage m_ThreadStorage;
             // use this object to determine current OS thread priority values mapped to enum Priority{}
             static ThreadPriority m_TpEnum;
