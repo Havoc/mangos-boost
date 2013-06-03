@@ -88,6 +88,10 @@
 #include "LockedQueue.h"
 #include "Threading.h"
 
+/* FIXME - build errors in OS_NS_stdlib.h in diff .cpp project files after drop ace/thread.h includes
+   some hidden include dependence - DROP with ACE drop */
+# include "ace/OS_Memory.h"
+
 #include <ace/Basic_Types.h>
 #include <boost/thread/mutex.hpp>
 #include <ace/OS_NS_arpa_inet.h>
