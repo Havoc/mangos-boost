@@ -45,7 +45,7 @@ Thread::~Thread()
 }
 
 // initialize Thread's class static member
-boost::thread_specific_ptr<Thread*> Thread::m_ThreadStorage;
+boost::thread_specific_ptr<Thread> Thread::m_ThreadStorage;
 
 bool Thread::wait()
 {
@@ -90,16 +90,13 @@ boost::thread::id Thread::currentId()
 
 Thread* Thread::current()
 {
-    Thread* _thread = *m_ThreadStorage;
-    if (!_thread)
+    if (!m_ThreadStorage.get())
     {
-        _thread = new Thread();
-        _thread->m_iThreadId = Thread::currentId();
-
-        m_ThreadStorage.reset(&_thread);
+        m_ThreadStorage.reset(new Thread());
+        m_ThreadStorage->m_iThreadId = Thread::currentId();
     }
 
-    return _thread;
+    return m_ThreadStorage.get();
 }
 
 void Thread::setPriority(Priority priority)

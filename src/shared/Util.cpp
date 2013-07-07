@@ -66,44 +66,59 @@ uint32 WorldTimer::getMSTime_internal(bool savetime /*= false*/)
     return iRes;
 }
 
-//////////////////////////////////////////////////////////////////////////
 int32 irand(int32 min, int32 max)
 {
+    if (!mtRand.get())
+        mtRand.reset(new MTRand());
     return int32(mtRand->randInt(max - min)) + min;
 }
 
 uint32 urand(uint32 min, uint32 max)
 {
+    if (!mtRand.get())
+        mtRand.reset(new MTRand());
     return mtRand->randInt(max - min) + min;
 }
 
 float frand(float min, float max)
 {
+    if (!mtRand.get())
+        mtRand.reset(new MTRand());
     return mtRand->randExc(max - min) + min;
 }
 
 int32 rand32()
 {
+    if (!mtRand.get())
+        mtRand.reset(new MTRand());
     return mtRand->randInt();
 }
 
 double rand_norm(void)
 {
+    if (!mtRand.get())
+        mtRand.reset(new MTRand());
     return mtRand->randExc();
 }
 
 float rand_norm_f(void)
 {
+    if (!mtRand.get())
+        mtRand.reset(new MTRand());
     return (float)mtRand->randExc();
 }
 
 double rand_chance(void)
 {
+    if (!mtRand.get())
+        mtRand.reset(new MTRand());
     return mtRand->randExc(100.0);
 }
 
 float rand_chance_f(void)
 {
+    if (!mtRand.get())
+        mtRand.reset(new MTRand());
     return (float)mtRand->randExc(100.0);
 }
 

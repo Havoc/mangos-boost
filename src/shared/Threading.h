@@ -79,7 +79,7 @@ namespace MaNGOS
             boost::thread m_ThreadImp;
 
             // global object - container for Thread class representation of every thread
-            typedef boost::thread_specific_ptr<Thread*> ThreadStorage;
+            typedef boost::thread_specific_ptr<Thread> ThreadStorage;
             static ThreadStorage m_ThreadStorage;
     };
 }
