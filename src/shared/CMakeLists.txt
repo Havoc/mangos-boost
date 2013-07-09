@@ -68,6 +68,15 @@ set(LIBRARY_SRCS
     LockedQueue.h
     Log.cpp
     Log.h
+    Network/NetworkBuffer.cpp
+    Network/NetworkBuffer.h
+    Network/NetworkThread.cpp
+    Network/NetworkThread.h
+    Network/NetworkManager.cpp
+    Network/NetworkManager.h
+    Network/ProtocolDefinitions.h
+    Network/Socket.cpp
+    Network/Socket.h
     ProgressBar.cpp
     ProgressBar.h
     revision_nr.h
@@ -79,13 +88,6 @@ set(LIBRARY_SRCS
     Util.cpp
     Util.h
     WorldPacket.h
-	Network/ProtocolDefinitions.h
-	Network/Socket.cpp
-	Network/Socket.h
-	Network/NetworkThread.cpp
-	Network/NetworkThread.h
-	Network/NetworkManager.cpp
-	Network/NetworkManager.h
    )
 
 # OS specific files

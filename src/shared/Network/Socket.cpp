@@ -16,16 +16,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <boost/bind.hpp>
-
 #include "Socket.h"
-#include "Common.h"
-
-#include "Util.h"
+#include <boost/bind.hpp>
 #include "Auth/Sha1.h"
-#include "Log.h"
+#include "Common.h"
 #include "NetworkThread.h"
 #include "NetworkManager.h"
+#include "Log.h"
+#include "Util.h"
 
 const std::string Socket::UNKNOWN_NETWORK_ADDRESS = "<unknown>";
 
@@ -85,8 +83,8 @@ bool Socket::open()
     m_closing = false;
 
     // Allocate buffers.
-    m_OutBuffer.reset( new NetworkBuffer(m_OutBufferSize) );
-    m_ReadBuffer.reset( new NetworkBuffer( protocol::READ_BUFFER_SIZE ) );
+    m_OutBuffer.reset(new NetworkBuffer(m_OutBufferSize));
+    m_ReadBuffer.reset(new NetworkBuffer(protocol::READ_BUFFER_SIZE));
 
     // Start reading data from client
     start_async_read();
@@ -171,9 +169,9 @@ void Socket::start_async_send()
 
     m_OutActive = true;
 
-    m_socket.async_write_some( boost::asio::buffer( m_OutBuffer->rd_ptr(), m_OutBuffer->length() ),
-                               boost::bind( &Socket::on_write_complete, shared_from_this(), 
-                                            boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred ) );
+    m_socket.async_write_some(boost::asio::buffer(m_OutBuffer->read_data(), m_OutBuffer->length()),
+        boost::bind(&Socket::on_write_complete, shared_from_this(), boost::asio::placeholders::error,
+        boost::asio::placeholders::bytes_transferred));
 }
 
 void Socket::on_write_complete( const boost::system::error_code& error,
@@ -188,10 +186,8 @@ void Socket::on_write_complete( const boost::system::error_code& error,
     GuardType Lock(m_OutBufferLock);
 
     m_OutActive = false;
-
-    m_OutBuffer->rd_ptr( bytes_transferred );
-
-    reset( *m_OutBuffer ); 
+    m_OutBuffer->Consume(bytes_transferred);
+    m_OutBuffer->Prepare();
 
     start_async_send();
 }
@@ -201,11 +197,11 @@ void Socket::start_async_read()
     if( IsClosed() )
         return;
 
-    reset( *m_ReadBuffer );
+    m_ReadBuffer->Prepare();
 
-    m_socket.async_read_some( boost::asio::buffer( m_ReadBuffer->wr_ptr(), m_ReadBuffer->space() ),
-                              boost::bind( &Socket::on_read_complete, shared_from_this(), 
-                                           boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred ) );
+    m_socket.async_read_some(boost::asio::buffer(m_ReadBuffer->write_data(), m_ReadBuffer->space()),
+        boost::bind(&Socket::on_read_complete, shared_from_this(), boost::asio::placeholders::error,
+        boost::asio::placeholders::bytes_transferred));
 }
 
 void Socket::on_read_complete( const boost::system::error_code& error,
@@ -219,7 +215,7 @@ void Socket::on_read_complete( const boost::system::error_code& error,
 
     if( bytes_transferred > 0 )
     {
-        m_ReadBuffer->wr_ptr( bytes_transferred );
+        m_ReadBuffer->Commit(bytes_transferred);
 
         if( !process_incoming_data() )
         {
@@ -229,18 +225,6 @@ void Socket::on_read_complete( const boost::system::error_code& error,
     }
 
     start_async_read();
-}
-
-void Socket::reset( NetworkBuffer& buffer )
-{
-    if( buffer.length() == 0 )
-    {
-        buffer.reset();
-    }
-    else
-    {
-        buffer.crunch();
-    }
 }
 
 void Socket::OnError( const boost::system::error_code& error )

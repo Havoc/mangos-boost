@@ -219,7 +219,7 @@ bool AuthSocket::process_incoming_data()
     uint8 _cmd;
     while (1)
     {
-        if (!recv_soft((char*)&_cmd, 1))
+        if (!m_ReadBuffer->ReadNoConsume(&_cmd, 1))
             return true;
 
         size_t i;
@@ -1104,52 +1104,28 @@ size_t AuthSocket::recv_len(void) const
     return m_ReadBuffer->length();
 }
 
-bool AuthSocket::recv_soft(char* buf, size_t len)
-{
-    if (m_ReadBuffer->length() < len)
-        return false;
-
-    ACE_OS::memcpy(buf, m_ReadBuffer->rd_ptr(), len);
-
-    return true;
-}
-
 bool AuthSocket::recv(char* buf, size_t len)
 {
-    bool ret = this->recv_soft(buf, len);
-
-    if (ret)
-        this->recv_skip(len);
-
-    return ret;
+    return m_ReadBuffer->Read((uint8*)buf, len);
 }
 
 void AuthSocket::recv_skip(size_t len)
 {
-    m_ReadBuffer->rd_ptr(len);
+    m_ReadBuffer->Consume(len);
 }
 
 bool AuthSocket::send(const char* buf, size_t len)
 {
-    if (buf == NULL || len == 0)
-        return true;
+    GuardType Guard(m_OutBufferLock);
 
-    GuardType Guard( m_OutBufferLock );
-
-    if (m_OutBuffer->space() >= len)
+    if (m_OutBuffer->Write((uint8*)buf, len))
     {
-        // Put the packet on the buffer.
-        if ( m_OutBuffer->copy((char*) buf, len) == -1 )
-            MANGOS_ASSERT(false);
+        start_async_send();
+        return true;
     }
     else
-    {
-        // Enqueue the packet.
         throw std::exception("network write buffer is too small to accommodate packet");
-    }
 
-    start_async_send();
-
-    return true;
+    return false;
 }
 

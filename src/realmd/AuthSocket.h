@@ -70,7 +70,6 @@ protected:
     private:
 
         size_t recv_len(void) const;
-        bool recv_soft(char* buf, size_t len);
         bool recv(char* buf, size_t len);
         void recv_skip(size_t len);
 

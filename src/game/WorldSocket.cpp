@@ -124,7 +124,6 @@ void WorldSocket::CloseSocket(void)
 
     {
         GuardType Guard( m_SessionLock );
-
         m_Session = NULL;
     }
 
@@ -147,10 +146,10 @@ bool WorldSocket::SendPacket(const WorldPacket& pct)
     if (m_OutBuffer->space() >= pct.size() + header.getHeaderLength())
     {
         // Put the packet on the buffer.
-        if (m_OutBuffer->copy((char*) header.header, header.getHeaderLength()) == -1)
+        if (!m_OutBuffer->Write(header.header, header.getHeaderLength()))
             MANGOS_ASSERT(false);
 
-        if (!pct.empty() && (m_OutBuffer->copy((char*) pct.contents(), pct.size()) == -1))
+        if (!pct.empty() && !m_OutBuffer->Write(pct.contents(), pct.size()))
             MANGOS_ASSERT(false);
     }
     else
@@ -193,20 +192,15 @@ bool WorldSocket::process_incoming_data()
         {
             // need to receive the header
             const size_t to_header = (m_ReadBuffer->length() > m_Header.space() ? m_Header.space() : m_ReadBuffer->length());
-            m_Header.copy(m_ReadBuffer->rd_ptr(), to_header);
-            m_ReadBuffer->rd_ptr(to_header);
+            m_Header.Write(m_ReadBuffer->read_data(), to_header);
+            m_ReadBuffer->Consume(to_header);
 
             if (m_Header.space() > 0)
-            {
-                // Couldn't receive the whole header this time.
                 return true;
-            }
 
             // We just received nice new header
             if (handle_input_header() == -1)
-            {
                 return false;
-            }
         }
 
         // Its possible on some error situations that this happens
@@ -223,20 +217,16 @@ bool WorldSocket::process_incoming_data()
         {
             // need more data in the payload
             const size_t to_data = (m_ReadBuffer->length() > m_RecvPct.space() ? m_RecvPct.space() : m_ReadBuffer->length());
-            m_RecvPct.copy(m_ReadBuffer->rd_ptr(), to_data);
-            m_ReadBuffer->rd_ptr(to_data);
+            m_RecvPct.Write(m_ReadBuffer->read_data(), to_data);
+            m_ReadBuffer->Consume(to_data);
 
             if (m_RecvPct.space() > 0)
-            {
                 return true;
-            }
         }
 
         // just received fresh new payload
         if (handle_input_payload() == -1)
-        {
             return false;
-        }
     }
 
     return true;
@@ -248,17 +238,16 @@ int WorldSocket::handle_input_header(void)
     MANGOS_ASSERT(m_RecvWPct == NULL);
     MANGOS_ASSERT(m_Header.length() == sizeof(ClientPktHeader));
 
-    m_Crypt.DecryptRecv((uint8*) m_Header.rd_ptr(), sizeof(ClientPktHeader));
+    m_Crypt.DecryptRecv(m_Header.read_data(), sizeof(ClientPktHeader));
 
-    ClientPktHeader& header = *((ClientPktHeader*) m_Header.rd_ptr());
+    ClientPktHeader& header = *((ClientPktHeader*) m_Header.read_data());
 
     header.Convert();
 
-    if ( !header.IsValid() )
+    if (!header.IsValid())
     {
         sLog.outError("WorldSocket::handle_input_header: client sent malformed packet size = %d , cmd = %d",
                       header.size, header.cmd);
-
         return -1;
     }
 
@@ -269,13 +258,11 @@ int WorldSocket::handle_input_header(void)
     if (header.size > 0)
     {
         m_RecvWPct->resize(header.size);
-        m_RecvPct.base((char*) m_RecvWPct->contents(), m_RecvWPct->size());
+        m_RecvPct.AssignBuffer((uint8*)m_RecvWPct->contents(), m_RecvWPct->size());
     }
     else
-    {
         MANGOS_ASSERT(m_RecvPct.space() == 0);
-    }
-
+    
     return 0;
 }
 
@@ -290,11 +277,10 @@ int WorldSocket::handle_input_payload(void)
 
     const int ret = ProcessIncoming(m_RecvWPct);
 
-    m_RecvPct.base(NULL, 0);
-    m_RecvPct.reset();
+    m_RecvPct.UnassignBuffer();
     m_RecvWPct = NULL;
 
-    m_Header.reset();
+    m_Header.Reset();
 
     return ret;
 }
@@ -306,7 +292,7 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
     // manage memory ;)
     std::auto_ptr<WorldPacket> aptr(new_pct);
 
-    const ACE_UINT16 opcode = new_pct->GetOpcode();
+    const uint16 opcode = new_pct->GetOpcode();
 
     if (opcode >= NUM_MSG_TYPES)
     {
@@ -318,7 +304,7 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
         return -1;
 
     // Dump received packet.
-    sLog.outWorldPacketDump( native_handle(), new_pct->GetOpcode(), new_pct->GetOpcodeName(), new_pct, true);
+    sLog.outWorldPacketDump(native_handle(), new_pct->GetOpcode(), new_pct->GetOpcodeName(), new_pct, true);
 
     try
     {
@@ -332,16 +318,13 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
                     sLog.outError("WorldSocket::ProcessIncoming: Player send CMSG_AUTH_SESSION again");
                     return -1;
                 }
-
                 return HandleAuthSession(*new_pct);
             case CMSG_KEEP_ALIVE:
                 DEBUG_LOG("CMSG_KEEP_ALIVE ,size: " SIZEFMTD " ", new_pct->size());
-
                 return 0;
             default:
             {
-                GuardType Guard(  m_SessionLock );
-
+                GuardType Guard(m_SessionLock);
 
                 if (m_Session != NULL)
                 {
@@ -375,7 +358,6 @@ int WorldSocket::ProcessIncoming(WorldPacket* new_pct)
         {
             DETAIL_LOG("Disconnecting session [account id %i / address %s] for badly formatted packet.",
                        m_Session ? m_Session->GetAccountId() : -1, GetRemoteAddress().c_str());
-
             return -1;
         }
     }
@@ -409,9 +391,7 @@ int WorldSocket::HandleAuthSession(WorldPacket& recvPacket)
     recvPacket.read(digest, 20);
 
     DEBUG_LOG("WorldSocket::HandleAuthSession: client build %u, account %s, clientseed %X",
-              ClientBuild,
-              account.c_str(),
-              clientSeed);
+              ClientBuild, account.c_str(), clientSeed);
 
     // Check the version of client trying to connect
     if (!IsAcceptableClientBuild(ClientBuild))

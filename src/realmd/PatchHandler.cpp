@@ -20,22 +20,18 @@
   \ingroup realmd
   */
 
-#include "Common.h"
 #include "PatchHandler.h"
-#include "AuthCodes.h"
-#include "Log.h"
-
 #include <ace/OS_NS_sys_socket.h>
 #include <ace/OS_NS_dirent.h>
 #include <ace/OS_NS_errno.h>
 #include <ace/OS_NS_unistd.h>
-
 #include <ace/os_include/netinet/os_tcp.h>
-
 #include <boost/bind.hpp>
+#include "Common.h"
+#include "AuthCodes.h"
+#include "Log.h"
 
 INSTANTIATE_SINGLETON_1(PatchCache);
-
 
 #ifndef MSG_NOSIGNAL
 #define MSG_NOSIGNAL 0
@@ -49,9 +45,9 @@ INSTANTIATE_SINGLETON_1(PatchCache);
 
 struct Chunk
 {
-    ACE_UINT8 cmd;
-    ACE_UINT16 data_size;
-    ACE_UINT8 data[4096]; // 4096 - page size on most arch
+    uint8 cmd;
+    uint16 data_size;
+    uint8 data[4096]; // 4096 - page size on most arch
 };
 
 #if defined( __GNUC__ )
@@ -66,7 +62,7 @@ PatchHandler::PatchHandler(protocol::Socket& socket, ACE_HANDLE patch) :
     patch_fd_( patch ),
     m_sendBuffer( sizeof(Chunk) )
 {
-    Chunk * data = (Chunk *)m_sendBuffer.rd_ptr();
+    Chunk* data = (Chunk*)m_sendBuffer.read_data();
     data->cmd = CMD_XFER_DATA;
     data->data_size = 0;
 }
@@ -79,7 +75,7 @@ PatchHandler::~PatchHandler()
 
 size_t PatchHandler::offset() const
 {
-    Chunk * chunk = (Chunk *)m_sendBuffer.rd_ptr();
+    Chunk* chunk = (Chunk*)m_sendBuffer.read_data();
     return sizeof(Chunk) - sizeof(chunk->data);
 }
 
@@ -103,25 +99,25 @@ void PatchHandler::on_timeout( const boost::system::error_code& error)
 
 void PatchHandler::transmit_file()
 {
-    m_sendBuffer.reset();
+    m_sendBuffer.Reset();
 
-    Chunk * data = (Chunk *)m_sendBuffer.rd_ptr();
+    Chunk* data = (Chunk*)m_sendBuffer.read_data();
 
     ssize_t r = ACE_OS::read(patch_fd_, data->data, sizeof(data->data));
     if( r <= 0 )
         return;
 
-    data->data_size = (ACE_UINT16)r;
-    m_sendBuffer.wr_ptr( size_t(r) + offset() );
+    data->data_size = (uint16)r;
+    m_sendBuffer.Commit(size_t(r) + offset());
 
     start_async_write();
 }
 
 void PatchHandler::start_async_write()
 {
-    m_socket.async_write_some( boost::asio::buffer( m_sendBuffer.rd_ptr(), m_sendBuffer.length() ),
-        boost::bind( &PatchHandler::on_write_complete, shared_from_this(), 
-                     boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred ));
+    m_socket.async_write_some(boost::asio::buffer(m_sendBuffer.read_data(), m_sendBuffer.length()),
+        boost::bind(&PatchHandler::on_write_complete, shared_from_this(), 
+                     boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 }
 
 void PatchHandler::on_write_complete( const boost::system::error_code& error, 
@@ -130,7 +126,7 @@ void PatchHandler::on_write_complete( const boost::system::error_code& error,
     if( error )
         return;
 
-    m_sendBuffer.rd_ptr( bytes_transferred );
+    m_sendBuffer.Consume(bytes_transferred);
 
     if(m_sendBuffer.length() > 0 )
     {
@@ -169,7 +165,7 @@ void PatchCache::LoadPatchMD5(const char* szFileName)
 
     const size_t check_chunk_size = 4 * 1024;
 
-    ACE_UINT8 buf[check_chunk_size];
+    uint8 buf[check_chunk_size];
 
     while (!feof(pPatch))
     {
@@ -181,10 +177,10 @@ void PatchCache::LoadPatchMD5(const char* szFileName)
 
     // Store the result in the internal patch hash map
     patches_[path] = new PATCH_INFO;
-    MD5_Final((ACE_UINT8*) & patches_[path]->md5, &ctx);
+    MD5_Final((uint8*) & patches_[path]->md5, &ctx);
 }
 
-bool PatchCache::GetHash(const char* pat, ACE_UINT8 mymd5[MD5_DIGEST_LENGTH])
+bool PatchCache::GetHash(const char* pat, uint8 mymd5[MD5_DIGEST_LENGTH])
 {
     for (Patches::iterator i = patches_.begin(); i != patches_.end(); ++i)
         if (!stricmp(pat, i->first.c_str()))

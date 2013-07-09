@@ -20,11 +20,8 @@
 #define PROTOCOL_DEFINITIONS_H
 
 #include "Platform/Define.h"
-
 #include <boost/asio.hpp>
 #include <boost/shared_ptr.hpp>
-
-#include <ace/Message_Block.h>
 
 namespace protocol
 {
@@ -37,8 +34,6 @@ namespace protocol
     const uint32 READ_BUFFER_SIZE = 4096;
     const uint32 SEND_BUFFER_SIZE = 65536;
 }
-
-typedef ACE_Message_Block NetworkBuffer;
 
 class Socket;
 typedef boost::shared_ptr<Socket> SocketPtr;

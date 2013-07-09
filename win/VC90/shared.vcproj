@@ -624,6 +624,14 @@
 			Name="Network"
 			>
 			<File
+				RelativePath="..\..\src\shared\Network\NetworkBuffer.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\..\src\shared\Network\NetworkBuffer.h"
+				>
+			</File>
+			<File
 				RelativePath="..\..\src\shared\Network\NetworkManager.cpp"
 				>
 			</File>

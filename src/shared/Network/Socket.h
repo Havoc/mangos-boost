@@ -19,11 +19,11 @@
 #ifndef SOCKET_H
 #define SOCKET_H
 
-#include "ProtocolDefinitions.h"
-
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/lock_guard.hpp>
+#include "NetworkBuffer.h"
+#include "ProtocolDefinitions.h"
 
 #if !defined (ACE_LACKS_PRAGMA_ONCE)
 #pragma once
@@ -103,8 +103,6 @@ private:
 
     void on_read_complete( const boost::system::error_code& error, 
         size_t bytes_transferred );
-
-    void reset( NetworkBuffer& buffer );
 
     void OnError( const boost::system::error_code& error );
 

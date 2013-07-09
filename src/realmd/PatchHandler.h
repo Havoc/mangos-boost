@@ -23,20 +23,17 @@
 #ifndef _PATCHHANDLER_H_
 #define _PATCHHANDLER_H_
 
-#include <ace/Basic_Types.h>
 #include <ace/Synch_Traits.h>
 #include <ace/Svc_Handler.h>
 #include <ace/SOCK_Stream.h>
-#include <ace/Message_Block.h>
 #include <ace/Auto_Ptr.h>
+#include <boost/enable_shared_from_this.hpp>
 #include <map>
-
 #include <openssl/bn.h>
 #include <openssl/md5.h>
-
-#include "Policies/Singleton.h"
+#include "Network/NetworkBuffer.h"
 #include "Network/ProtocolDefinitions.h"
-#include <boost/enable_shared_from_this.hpp>
+#include "Policies/Singleton.h"
 
 /**
  * @brief Caches MD5 hash of client patches present on the server
@@ -49,7 +46,7 @@ class PatchCache
 
         struct PATCH_INFO
         {
-            ACE_UINT8 md5[MD5_DIGEST_LENGTH];
+            uint8 md5[MD5_DIGEST_LENGTH];
         };
 
         typedef std::map<std::string, PATCH_INFO*> Patches;
@@ -65,7 +62,7 @@ class PatchCache
         }
 
         void LoadPatchMD5(const char*);
-        bool GetHash(const char* pat, ACE_UINT8 mymd5[MD5_DIGEST_LENGTH]);
+        bool GetHash(const char* pat, uint8 mymd5[MD5_DIGEST_LENGTH]);
 
     private:
         void LoadPatchesInfo();

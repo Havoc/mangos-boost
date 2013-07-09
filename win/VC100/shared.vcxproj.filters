@@ -87,6 +87,9 @@
     <ClCompile Include="..\..\src\shared\Database\SqlPreparedStatement.cpp">
       <Filter>Database</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\src\shared\Network\NetworkBuffer.cpp">
+      <Filter>Network</Filter>
+    </ClCompile>
     <ClCompile Include="..\..\src\shared\Network\NetworkManager.cpp">
       <Filter>Network</Filter>
     </ClCompile>
@@ -190,6 +193,9 @@
     <ClInclude Include="..\..\src\shared\Threading.h" />
     <ClInclude Include="..\..\src\shared\Database\SqlPreparedStatement.h">
       <Filter>Database</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\src\shared\Network\NetworkBuffer.h">
+      <Filter>Network</Filter>
     </ClInclude>
     <ClInclude Include="..\..\src\shared\Network\NetworkManager.h">
       <Filter>Network</Filter>
