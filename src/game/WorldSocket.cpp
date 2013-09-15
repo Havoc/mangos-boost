@@ -17,8 +17,10 @@
  */
 
 #include "WorldSocket.h"
+#include <boost/bind.hpp>
+#include <boost/thread.hpp>
+#include <boost/date_time/posix_time/posix_time_duration.hpp>
 #include "Common.h"
-
 #include "Util.h"
 #include "World.h"
 #include "WorldPacket.h"
@@ -31,10 +33,6 @@
 #include "WorldSocketMgr.h"
 #include "Log.h"
 #include "DBCStores.h"
-
-#include <boost/bind.hpp>
-#include <boost/thread.hpp>
-#include <boost/date_time/posix_time/posix_time_duration.hpp>
 
 #if defined( __GNUC__ )
 #pragma pack(1)
@@ -100,16 +98,8 @@ struct ClientPktHeader
 #pragma pack(pop)
 #endif
 
-WorldSocket::WorldSocket( NetworkManager& socketMrg, 
-                          NetworkThread& owner ) :
-    Socket( socketMrg, owner ),
-    m_LastPingTime(ACE_Time_Value::zero),
-    m_OverSpeedPings(0),
-    m_Session(0),
-    m_RecvWPct(0),
-    m_RecvPct(),
-    m_Header(sizeof(ClientPktHeader)),
-    m_Seed(static_cast<uint32>(rand32()))
+WorldSocket::WorldSocket(NetworkManager& socketMrg, NetworkThread& owner) : Socket( socketMrg, owner ), m_LastPingTime(ACE_Time_Value::zero),
+    m_OverSpeedPings(0), m_Session(0), m_RecvWPct(0), m_RecvPct(), m_Header(sizeof(ClientPktHeader)), m_Seed(static_cast<uint32>(rand32()))
 {
 
 }

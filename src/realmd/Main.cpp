@@ -260,8 +260,8 @@ extern int main(int argc, char** argv)
     uint16 rmport = sConfig.GetIntDefault("RealmServerPort", DEFAULT_REALMSERVER_PORT);
     std::string bind_ip = sConfig.GetStringDefault("BindIP", "0.0.0.0");
 
-    std::auto_ptr< SessionManager > manager( new SessionManager() );
-    if ( !manager->StartNetwork( rmport, bind_ip ))
+    std::auto_ptr<SessionManager> manager(new SessionManager());
+    if (!manager->StartNetwork(rmport, bind_ip))
     {
         sLog.outError("MaNGOS realmd can not bind to %s:%d", bind_ip.c_str(), rmport);
         Log::WaitBeforeContinueIfNeed();
@@ -342,7 +342,6 @@ extern int main(int argc, char** argv)
 #endif
     }
 
-    manager->StopNetwork();
     manager.reset();
 
     ///- Wait for the delay thread to exit

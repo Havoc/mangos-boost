@@ -19,65 +19,53 @@
 #include "NetworkThread.h"
 #include "Database/DatabaseEnv.h"
 
-NetworkThread::NetworkThread() :
-    m_Connections(0)
+NetworkThread::NetworkThread() : connections_(0)
 {
-    m_work.reset( new protocol::Service::work(m_networkingService));
+
 }
 
 NetworkThread::~NetworkThread()
 {
     Stop();
-    Wait();
-}
-
-void NetworkThread::Stop()
-{
-    m_work.reset();
-    m_networkingService.stop();
-
-    Wait();
 }
 
 void NetworkThread::Start()
 {
-    m_thread.reset(new boost::thread(boost::bind(&NetworkThread::svc, this)));
+    service_work_.reset(new protocol::Service::work(service_));
+    thread_.reset(new boost::thread(boost::bind(&NetworkThread::Work, this)));
 }
 
-void NetworkThread::Wait()
+void NetworkThread::Stop()
 {
-    if(m_thread.get())
+    service_work_.reset();
+    service_.stop();
+
+    if (thread_.get())
     {
-        m_thread->join();
-        m_thread.reset();
+        thread_->join();
+        thread_.reset();
     }
 }
 
-void NetworkThread::AddSocket( const SocketPtr& sock )
+void NetworkThread::AddSocket(const SocketPtr& socket)
 {
-    ++m_Connections;
-
-    boost::lock_guard<boost::mutex> lock(m_SocketsLock);
-    m_Sockets.insert(sock);
+    ++connections_;
+    boost::lock_guard<boost::mutex> lock(mutex_);
+    sockets_.insert(socket);
 }
 
-void NetworkThread::RemoveSocket( const SocketPtr& sock )
+void NetworkThread::RemoveSocket(const SocketPtr& socket)
 {
-    --m_Connections;
-
-    boost::lock_guard<boost::mutex> lock(m_SocketsLock);
-    m_Sockets.erase(sock);
+    --connections_;
+    boost::lock_guard<boost::mutex> lock(mutex_);
+    sockets_.erase(socket);
 }
 
-void NetworkThread::svc()
+void NetworkThread::Work()
 {
     DEBUG_LOG("Network Thread Starting");
-
     LoginDatabase.ThreadStart();
-
-    m_networkingService.run();
-
+    service_.run();
     LoginDatabase.ThreadEnd();
-
     DEBUG_LOG("Network Thread Exitting");
 }

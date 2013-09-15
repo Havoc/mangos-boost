@@ -16,14 +16,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/** \addtogroup u2w User to World Communication
- * @{
- * \file WorldSocket.h
- * \author Derex <derex101@gmail.com>
- */
-
-#ifndef _WORLDSOCKET_H
-#define _WORLDSOCKET_H
+#ifndef WORLD_SOCKET_H
+#define WORLD_SOCKET_H
 
 #include <ace/Time_Value.h>
 #include <boost/thread/recursive_mutex.hpp>
@@ -156,6 +150,4 @@ protected:
 
 typedef boost::shared_ptr<WorldSocket> WorldSocketPtr;
 
-#endif  /* _WORLDSOCKET_H */
-
-/// @}
+#endif // WORLD_SOCKET_H

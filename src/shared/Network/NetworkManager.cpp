@@ -16,17 +16,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "Common.h"
 #include "NetworkManager.h"
+#include <boost/bind.hpp>
+#include "Common.h"
 #include "NetworkThread.h"
 #include "Socket.h"
 #include "Log.h"
 
-#include <boost/bind.hpp>
-
-NetworkManager::NetworkManager():
-    m_NetThreadsCount(1),
-    m_isRunning(false)
+NetworkManager::NetworkManager() : network_threads_count_(1), running_(false)
 {
 
 }
@@ -34,117 +31,95 @@ NetworkManager::NetworkManager():
 NetworkManager::~NetworkManager()
 {
     StopNetwork();
-
-    m_acceptor.reset();
-    m_NetThreads.reset();
+    acceptor_.reset();
+    network_threads_.reset();
 }
 
-bool NetworkManager::StartNetworkIO( boost::uint16_t port, const char* address )
+bool NetworkManager::StartNetwork(boost::uint16_t port, std::string address)
 {
-    if( m_NetThreadsCount <= 0 )
+    if (running_)
+        return false;
+
+    address_ = address;
+    port_ = port;
+
+    if (network_threads_count_ <= 0)
     {
-        sLog.outError("Number of network threads is incorrect = %i", m_NetThreadsCount );
+        sLog.outError("Number of network threads is incorrect = %i", network_threads_count_);
         return false;
     }
 
-    m_NetThreadsCount += 1;
-    m_NetThreads.reset( new NetworkThread[ m_NetThreadsCount ] );
+    network_threads_count_ += 1;
+    network_threads_.reset(new NetworkThread[network_threads_count_]);
 
     try
     {
-        protocol::Endpoint listen_addr( protocol::IPAddress::from_string( address ), port );
-        m_acceptor.reset( new protocol::Acceptor( get_acceptor_thread().service() , listen_addr ) );
+        protocol::Endpoint listen_address(protocol::IPAddress::from_string(address_), port_);
+        acceptor_.reset(new protocol::Acceptor(get_acceptor_thread().service(), listen_address));
     }
-    catch( boost::system::error_code&  )
+    catch (boost::system::error_code&)
     {
         sLog.outError("Failed to open acceptor, check if the port is free");
         return false;
     }
 
-    m_isRunning = true;
+    running_ = true;
 
-    accept_next_connection();
+    AcceptNewConnection();
 
-    for (size_t i = 0; i < m_NetThreadsCount; ++i)
-        m_NetThreads[i].Start();
+    for (size_t i = 0; i < network_threads_count_; ++i)
+        network_threads_[i].Start();
     
     return true;
 }
 
-bool NetworkManager::StartNetwork( boost::uint16_t port, std::string& address)
-{
-    m_addr = address;
-    m_port = port;
-
-    return StartNetworkIO(port, address.c_str());
-}
-
 void NetworkManager::StopNetwork()
 {
-    if( m_isRunning )
+    if (running_)
     {
-        m_isRunning = false;
+        if (acceptor_.get())
+            acceptor_->cancel();
 
-        Stop();
-        Wait();
+        if (network_threads_)
+            for (size_t i = 0; i < network_threads_count_; ++i)
+                network_threads_[i].Stop();
+
+        running_ = false;
     }
 }
 
-void NetworkManager::Wait()
+bool NetworkManager::OnSocketOpen(const SocketPtr& socket)
 {
-    if( m_NetThreads )
-    {
-        for (size_t i = 0; i < m_NetThreadsCount; ++i)
-            m_NetThreads[i].Wait();
-    }
-}
-
-void NetworkManager::Stop()
-{
-    if( m_acceptor.get() )
-        m_acceptor->cancel();
-
-    if( m_NetThreads )
-    {
-        for (size_t i = 0; i < m_NetThreadsCount; ++i)
-            m_NetThreads[i].Stop();
-    }
-}
-
-bool NetworkManager::OnSocketOpen( const SocketPtr& sock )
-{
-    NetworkThread& thrd = sock->owner();
-    thrd.AddSocket( sock );
+    NetworkThread& thread = socket->owner();
+    thread.AddSocket(socket);
 
     return true;
 }
 
-void NetworkManager::OnSocketClose( const SocketPtr& sock )
+void NetworkManager::OnSocketClose(const SocketPtr& socket)
 {
-    NetworkThread& thrd = sock->owner();
-    thrd.RemoveSocket( sock );
+    NetworkThread& thread = socket->owner();
+    thread.RemoveSocket(socket);
 }
 
-void NetworkManager::accept_next_connection()
+void NetworkManager::AcceptNewConnection()
 {
     NetworkThread& worker = get_network_thread_for_new_connection();
-    SocketPtr connection = CreateSocket( worker );
+    SocketPtr connection = CreateSocket(worker);
 
-    m_acceptor->async_accept( connection->socket(), 
-                              boost::bind( &NetworkManager::OnNewConnection, this, connection, 
-                                           boost::asio::placeholders::error) );
+    acceptor_->async_accept(connection->socket(),
+        boost::bind(&NetworkManager::OnNewConnection, this, connection, boost::asio::placeholders::error));
 }
 
-void NetworkManager::OnNewConnection( SocketPtr connection, 
-                                      const boost::system::error_code& error )
+void NetworkManager::OnNewConnection(SocketPtr connection, const boost::system::error_code& error)
 {
-    if( error )
+    if (error)
     {
         sLog.outError("Error accepting new client connection!");
         return;
     }
     
-    if( !connection->open() )
+    if (!connection->open())
     {
         sLog.outError("Unable to start new client connection!");
 
@@ -152,26 +127,26 @@ void NetworkManager::OnNewConnection( SocketPtr connection,
         return;
     }
 
-    accept_next_connection();
+    AcceptNewConnection();
 }
 
 NetworkThread& NetworkManager::get_acceptor_thread()
 {
-    return m_NetThreads[0];
+    return network_threads_[0];
 }
 
 NetworkThread& NetworkManager::get_network_thread_for_new_connection()
 {
-    //we skip the Acceptor Thread
+    // Skip acceptor thread
     size_t min = 1;
 
-    MANGOS_ASSERT(m_NetThreadsCount > 1);
+    MANGOS_ASSERT(network_threads_count_ > 1);
 
-    for (size_t i = 1; i < m_NetThreadsCount; ++i)
+    for (size_t i = 1; i < network_threads_count_; ++i)
     {
-        if (m_NetThreads[i].Connections() < m_NetThreads[min].Connections())
+        if (network_threads_[i].Connections() < network_threads_[min].Connections())
             min = i;
     }
 
-    return m_NetThreads[min];
+    return network_threads_[min];
 }

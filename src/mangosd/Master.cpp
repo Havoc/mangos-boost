@@ -16,10 +16,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/** \file
-    \ingroup mangosd
-*/
-
 #ifndef WIN32
 #include "PosixDaemon.h"
 #endif
@@ -213,8 +209,8 @@ int Master::Run()
     _HookSignals();
 
     ///- Launch WorldRunnable thread
-    MaNGOS::Thread world_thread(new WorldRunnable);
-    world_thread.setPriority(MaNGOS::Priority_Highest);
+    //MaNGOS::Thread world_thread(new WorldRunnable);
+    //world_thread.setPriority(MaNGOS::Priority_Highest);
 
     // set realmbuilds depend on mangosd expected builds, and set server online
     {
@@ -273,7 +269,7 @@ int Master::Run()
 
         bool Prio = sConfig.GetBoolDefault("ProcessPriority", false);
 
-//        if(Prio && (m_ServiceStatus == -1)/* need set to default process priority class in service mode*/)
+        // if(Prio && (m_ServiceStatus == -1)/* need set to default process priority class in service mode*/)
         if (Prio)
         {
             if (SetPriorityClass(hProcess, HIGH_PRIORITY_CLASS))
@@ -310,7 +306,7 @@ int Master::Run()
     uint16 wsport = sWorld.getConfig(CONFIG_UINT32_PORT_WORLD);
     std::string bind_ip = sConfig.GetStringDefault("BindIP", "0.0.0.0");
 
-    if ( !sWorldSocketMgr.StartNetwork(wsport, bind_ip) )
+    if (!sWorldSocketMgr.StartNetwork(wsport, bind_ip))
     {
         sLog.outError("Failed to start network");
         Log::WaitBeforeContinueIfNeed();
@@ -318,7 +314,9 @@ int Master::Run()
         // go down and shutdown the server
     }
 
-    sWorldSocketMgr.Wait();
+    WorldRunnable* wr = new WorldRunnable();
+    wr->run();
+    delete wr;
 
     ///- Stop freeze protection before shutdown tasks
     if (freeze_thread)
@@ -343,7 +341,7 @@ int Master::Run()
 
     // when the main thread closes the singletons get unloaded
     // since worldrunnable uses them, it will crash if unloaded after master
-    world_thread.wait();
+    //world_thread.wait();
 
     if (rar_thread)
     {

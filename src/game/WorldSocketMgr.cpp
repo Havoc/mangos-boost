@@ -16,28 +16,18 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/** \file WorldSocketMgr.cpp
-*  \ingroup u2w
-*  \author Derex <derex101@gmail.com>
-*/
-
 #include "WorldSocketMgr.h"
-
+#include <boost/system/error_code.hpp>
 #include "Log.h"
 #include "Common.h"
 #include "Config/Config.h"
 #include "WorldSocket.h"
 
-#include <boost/system/error_code.hpp>
-
 #define CLASS_LOCK MaNGOS::ClassLevelLockable<WorldSocketMgr, boost::recursive_mutex>
 INSTANTIATE_SINGLETON_2(WorldSocketMgr, CLASS_LOCK);
 INSTANTIATE_CLASS_MUTEX(WorldSocketMgr, boost::recursive_mutex);
 
-WorldSocketMgr::WorldSocketMgr():
-    m_SockOutKBuff(-1),
-    m_SockOutUBuff(protocol::SEND_BUFFER_SIZE),
-    m_UseNoDelay(true)
+WorldSocketMgr::WorldSocketMgr() : m_SockOutKBuff(-1), m_SockOutUBuff(protocol::SEND_BUFFER_SIZE), m_UseNoDelay(true)
 {
     
 }
@@ -46,8 +36,11 @@ WorldSocketMgr::~WorldSocketMgr()
 {
 }
 
-bool WorldSocketMgr::StartNetworkIO( boost::uint16_t port, const char* address )
+bool WorldSocketMgr::StartNetwork(boost::uint16_t port, std::string address)
 {
+    if (running_)
+        return false;
+
     m_UseNoDelay = sConfig.GetBoolDefault("Network.TcpNodelay", true);
 
     // -1 means use default
@@ -61,38 +54,38 @@ bool WorldSocketMgr::StartNetworkIO( boost::uint16_t port, const char* address )
         return false;
     }
 
-    m_NetThreadsCount = static_cast<size_t>( sConfig.GetIntDefault("Network.Threads", 1) );
+    network_threads_count_ = static_cast<size_t>(sConfig.GetIntDefault("Network.Threads", 1));
 
-    if( !NetworkManager::StartNetworkIO( port, address ) )
+    if (!NetworkManager::StartNetwork(port, address))
         return false;
 
     BASIC_LOG("Max allowed socket connections %d", boost::asio::socket_base::max_connections);
     return true;
 }
 
-bool WorldSocketMgr::OnSocketOpen( const SocketPtr& sock )
+bool WorldSocketMgr::OnSocketOpen(const SocketPtr& socket)
 {
     // set some options here
-    if (m_SockOutKBuff >= 0 && !sock->SetSendBufferSize( m_SockOutKBuff ))
+    if (m_SockOutKBuff >= 0 && !socket->SetSendBufferSize(m_SockOutKBuff))
     {
         sLog.outError("WorldSocketMgr::OnSocketOpen set_option SO_SNDBUF");
         return false;
     }
 
     // Set TCP_NODELAY.
-    if (m_UseNoDelay && !sock->EnableTCPNoDelay( m_UseNoDelay ))
+    if (m_UseNoDelay && !socket->EnableTCPNoDelay(m_UseNoDelay))
     {
         sLog.outError("WorldSocketMgr::OnSocketOpen: peer().set_option TCP_NODELAY errno = %s",
             boost::system::error_code(errno, boost::system::get_system_category()).message());
         return false;
     }
 
-    sock->SetOutgoingBufferSize( static_cast<size_t>(m_SockOutUBuff) );
+    socket->SetOutgoingBufferSize( static_cast<size_t>(m_SockOutUBuff));
 
-    return NetworkManager::OnSocketOpen( sock );
+    return NetworkManager::OnSocketOpen(socket);
 }
 
-SocketPtr WorldSocketMgr::CreateSocket( NetworkThread& owner )
+SocketPtr WorldSocketMgr::CreateSocket(NetworkThread& owner)
 {
-    return SocketPtr( new WorldSocket( *this, owner ) );
+    return SocketPtr(new WorldSocket(*this, owner));
 }

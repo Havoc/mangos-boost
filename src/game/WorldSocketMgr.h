@@ -16,46 +16,35 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/** \addtogroup u2w User to World Communication
- *  @{
- *  \file WorldSocketMgr.h
- *  \author Derex <derex101@gmail.com>
- */
-
-#ifndef __WORLDSOCKETMGR_H
-#define __WORLDSOCKETMGR_H
+#ifndef WORLD_SOCKET_MGR_H
+#define WORLD_SOCKET_MGR_H
 
 #include <boost/thread/recursive_mutex.hpp>
-
 #include <string>
-
 #include "Policies/Singleton.h"
 #include "Network/NetworkManager.h"
 
-
 /// Manages all sockets connected to peers and network threads
-class WorldSocketMgr : public NetworkManager, public MaNGOS::Singleton<WorldSocketMgr, MaNGOS::ClassLevelLockable<WorldSocketMgr, boost::recursive_mutex> > 
+class WorldSocketMgr : public NetworkManager, public MaNGOS::Singleton<WorldSocketMgr, MaNGOS::ClassLevelLockable<WorldSocketMgr, boost::recursive_mutex>> 
 {
-    public:
-        friend class WorldSocket;
-        friend class MaNGOS::OperatorNew<WorldSocketMgr>;
+public:
+    friend class WorldSocket;
+    friend class MaNGOS::OperatorNew<WorldSocketMgr>;
 
-    private:
-        virtual bool OnSocketOpen( const SocketPtr& sock ) override;
+    virtual bool StartNetwork(boost::uint16_t port, std::string address) override;
 
-        virtual bool StartNetworkIO( boost::uint16_t port, const char* address ) override;
+private:
+    WorldSocketMgr();
+    virtual ~WorldSocketMgr();
 
-        WorldSocketMgr();
-        virtual ~WorldSocketMgr();
+    virtual bool OnSocketOpen(const SocketPtr& socket) override;
+    virtual SocketPtr CreateSocket(NetworkThread& owner) override;
 
-        virtual SocketPtr CreateSocket( NetworkThread& owner ) override;
-
-        int m_SockOutKBuff;
-        int m_SockOutUBuff;
-        bool m_UseNoDelay;
+    int m_SockOutKBuff;
+    int m_SockOutUBuff;
+    bool m_UseNoDelay;
 };
 
 #define sWorldSocketMgr WorldSocketMgr::Instance()
 
-#endif
-/// @}
+#endif // WORLD_SOCKET_MGR_H

@@ -29,14 +29,17 @@ SessionManager::~SessionManager()
 
 }
 
-bool SessionManager::StartNetworkIO( boost::uint16_t port, const char* address )
+bool SessionManager::StartNetwork(boost::uint16_t port, std::string address)
 {
-    m_NetThreadsCount = 2;
+    if (running_)
+        return false;
+    
+    network_threads_count_ = 2;
 
-    return NetworkManager::StartNetworkIO( port, address );
+    return NetworkManager::StartNetwork(port, address);
 }
 
-SocketPtr SessionManager::CreateSocket( NetworkThread& owner )
+SocketPtr SessionManager::CreateSocket(NetworkThread& owner)
 {
-    return SocketPtr( new AuthSocket( *this, owner ) );
+    return SocketPtr(new AuthSocket(*this, owner));
 }
