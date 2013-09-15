@@ -20,11 +20,9 @@
 #include "PosixDaemon.h"
 #endif
 
-#include "WorldSocketMgr.h"
-#include "Common.h"
 #include "Master.h"
+#include "Common.h"
 #include "WorldSocket.h"
-#include "WorldRunnable.h"
 #include "World.h"
 #include "Log.h"
 #include "Timer.h"
@@ -39,10 +37,14 @@
 #include "MaNGOSsoap.h"
 #include "MassMailMgr.h"
 #include "DBCStores.h"
+#include "MapManager.h"
+#include "WorldSocketMgr.h"
 
 #include <ace/OS_NS_signal.h>
 #include <ace/TP_Reactor.h>
 #include <ace/Dev_Poll_Reactor.h>
+
+#define WORLD_SLEEP_CONST 50
 
 #ifdef WIN32
 #include "ServiceWin32.h"
@@ -208,10 +210,6 @@ int Master::Run()
     ///- Catch termination signals
     _HookSignals();
 
-    ///- Launch WorldRunnable thread
-    //MaNGOS::Thread world_thread(new WorldRunnable);
-    //world_thread.setPriority(MaNGOS::Priority_Highest);
-
     // set realmbuilds depend on mangosd expected builds, and set server online
     {
         std::string builds = AcceptableClientBuildsListStr();
@@ -314,9 +312,54 @@ int Master::Run()
         // go down and shutdown the server
     }
 
-    WorldRunnable* wr = new WorldRunnable();
-    wr->run();
-    delete wr;
+    ///- Init new SQL thread for the world database
+    WorldDatabase.ThreadStart();                            // let thread do safe mySQL requests (one connection call enough)
+    sWorld.InitResultQueue();
+
+    uint32 realCurrTime = 0;
+    uint32 realPrevTime = WorldTimer::tick();
+
+    uint32 prevSleepTime = 0;                               // used for balanced full tick time length near WORLD_SLEEP_CONST
+
+    ///- While we have not World::m_stopEvent, update the world
+    while (!World::IsStopped())
+    {
+        ++World::m_worldLoopCounter;
+        realCurrTime = WorldTimer::getMSTime();
+
+        uint32 diff = WorldTimer::tick();
+
+        sWorld.Update(diff);
+        realPrevTime = realCurrTime;
+
+        // diff (D0) include time of previous sleep (d0) + tick time (t0)
+        // we want that next d1 + t1 == WORLD_SLEEP_CONST
+        // we can't know next t1 and then can use (t0 + d1) == WORLD_SLEEP_CONST requirement
+        // d1 = WORLD_SLEEP_CONST - t0 = WORLD_SLEEP_CONST - (D0 - d0) = WORLD_SLEEP_CONST + d0 - D0
+        if (diff <= WORLD_SLEEP_CONST + prevSleepTime)
+        {
+            prevSleepTime = WORLD_SLEEP_CONST + prevSleepTime - diff;
+            MaNGOS::Thread::Sleep(prevSleepTime);
+        }
+        else
+            prevSleepTime = 0;
+
+        #ifdef WIN32
+        if (m_ServiceStatus == 0)
+            World::StopNow(SHUTDOWN_EXIT_CODE);
+        while (m_ServiceStatus == 2)
+            Sleep(1000);
+        #endif
+    }
+
+    sWorld.CleanupsBeforeStop();
+
+    sWorldSocketMgr.StopNetwork();
+
+    MapManager::Instance().UnloadAll();                     // unload all grids (including locked in memory)
+
+    ///- End the database thread
+    WorldDatabase.ThreadEnd();                              // free mySQL thread resources
 
     ///- Stop freeze protection before shutdown tasks
     if (freeze_thread)
@@ -338,10 +381,6 @@ int Master::Run()
 
     ///- Remove signal handling before leaving
     _UnhookSignals();
-
-    // when the main thread closes the singletons get unloaded
-    // since worldrunnable uses them, it will crash if unloaded after master
-    //world_thread.wait();
 
     if (rar_thread)
     {

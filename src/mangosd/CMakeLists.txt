@@ -28,8 +28,6 @@ set(EXECUTABLE_SRCS
     Master.h
     RASocket.cpp
     RASocket.h
-    WorldRunnable.cpp
-    WorldRunnable.h
     soapC.cpp
     soapH.h
     soapServer.cpp

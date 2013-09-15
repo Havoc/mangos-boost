@@ -735,14 +735,6 @@
 			RelativePath="..\..\src\shared\WheatyExceptionReport.h"
 			>
 		</File>
-		<File
-			RelativePath="..\..\src\mangosd\WorldRunnable.cpp"
-			>
-		</File>
-		<File
-			RelativePath="..\..\src\mangosd\WorldRunnable.h"
-			>
-		</File>
 	</Files>
 	<Globals>
 	</Globals>
