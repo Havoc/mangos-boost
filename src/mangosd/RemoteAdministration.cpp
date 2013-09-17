@@ -16,14 +16,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/** \file
-    \ingroup mangosd
-*/
-
+#include "RemoteAdministration.h"
 #include "Common.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
-#include "RASocket.h"
 #include "World.h"
 #include "Config/Config.h"
 #include "Util.h"
@@ -31,30 +27,22 @@
 #include "Language.h"
 #include "ObjectMgr.h"
 
-/// RASocket constructor
-RASocket::RASocket()
-    : RAHandler(),
-      pendingCommands(0, USYNC_THREAD, "pendingCommands"),
-      outActive(false),
-      inputBufferLen(0),
-      outputBufferLen(0),
-      stage(NONE)
+RASocket::RASocket() : RAHandler(), pendingCommands(0, USYNC_THREAD, "pendingCommands"), outActive(false),
+    inputBufferLen(0), outputBufferLen(0), stage(NONE)
 {
-    ///- Get the config parameters
     bSecure = sConfig.GetBoolDefault("RA.Secure", true);
     bStricted = sConfig.GetBoolDefault("RA.Stricted", false);
     iMinLevel = AccountTypes(sConfig.GetIntDefault("RA.MinLevel", SEC_ADMINISTRATOR));
     reference_counting_policy().value(ACE_Event_Handler::Reference_Counting_Policy::ENABLED);
 }
 
-/// RASocket destructor
 RASocket::~RASocket()
 {
     peer().close();
     sLog.outRALog("Connection was closed.");
 }
 
-/// Accept an incoming connection
+// Accepts an incoming connection
 int RASocket::open(void*)
 {
     if (reactor()->register_handler(this, ACE_Event_Handler::READ_MASK | ACE_Event_Handler::WRITE_MASK) == -1)
@@ -73,7 +61,7 @@ int RASocket::open(void*)
 
     sLog.outRALog("Incoming connection from %s.", remote_addr.get_host_addr());
 
-    ///- print Motd
+    // Print Motd
     sendf(sWorld.GetMotd());
     sendf("\r\n");
     sendf(sObjectMgr.GetMangosStringForDBCLocale(LANG_RA_USER));
@@ -85,11 +73,11 @@ int RASocket::close(int)
 {
     if (closing_)
         return -1;
+
     DEBUG_LOG("RASocket::close");
+
     shutdown();
-
     closing_ = true;
-
     remove_reference();
     return 0;
 }
@@ -98,11 +86,11 @@ int RASocket::handle_close(ACE_HANDLE h, ACE_Reactor_Mask)
 {
     if (closing_)
         return -1;
+
     DEBUG_LOG("RASocket::handle_close");
     ACE_GUARD_RETURN(ACE_Thread_Mutex, Guard, outBufferLock, -1);
 
     closing_ = true;
-
     if (h == ACE_INVALID_HANDLE)
         peer().close_writer();
     remove_reference();
@@ -126,11 +114,12 @@ int RASocket::handle_output(ACE_HANDLE)
         outActive = false;
         return 0;
     }
+
 #ifdef MSG_NOSIGNAL
     ssize_t n = peer().send(outputBuffer, outputBufferLen, MSG_NOSIGNAL);
 #else
     ssize_t n = peer().send(outputBuffer, outputBufferLen);
-#endif // MSG_NOSIGNAL
+#endif
 
     if (n <= 0)
         return -1;
@@ -142,7 +131,7 @@ int RASocket::handle_output(ACE_HANDLE)
     return 0;
 }
 
-/// Read data from the network
+// Read data from the network
 int RASocket::handle_input(ACE_HANDLE)
 {
     DEBUG_LOG("RASocket::handle_input");
@@ -160,7 +149,7 @@ int RASocket::handle_input(ACE_HANDLE)
         return -1;
     }
 
-    ///- Discard data after line break or line feed
+    // Discard data after line break or line feed
     bool gotenter = false;
     for (; readBytes > 0 ; --readBytes)
     {
@@ -179,14 +168,14 @@ int RASocket::handle_input(ACE_HANDLE)
         inputBufferLen = 0;
         switch (stage)
         {
-                /// <ul> <li> If the input is '<username>'
+            // If the input is '<username>'
             case NONE:
             {
                 std::string szLogin = inputBuffer;
 
                 accId = sAccountMgr.GetId(szLogin);
 
-                ///- If the user is not found, deny access
+                // If the user is not found, deny access
                 if (!accId)
                 {
                     sendf("-No such user.\r\n");
@@ -203,7 +192,7 @@ int RASocket::handle_input(ACE_HANDLE)
 
                 accAccessLevel = sAccountMgr.GetSecurity(accId);
 
-                ///- if gmlevel is too low, deny access
+                // If gmlevel is too low: Deny access
                 if (accAccessLevel < iMinLevel)
                 {
                     sendf("-Not enough privileges.\r\n");
@@ -218,7 +207,7 @@ int RASocket::handle_input(ACE_HANDLE)
                     break;
                 }
 
-                ///- allow by remotely connected admin use console level commands dependent from config setting
+                // Allow by remotely connected admin use console level commands dependent from config setting
                 if (accAccessLevel >= SEC_ADMINISTRATOR && !bStricted)
                     accAccessLevel = SEC_CONSOLE;
 
@@ -226,12 +215,12 @@ int RASocket::handle_input(ACE_HANDLE)
                 sendf(sObjectMgr.GetMangosStringForDBCLocale(LANG_RA_PASS));
                 break;
             }
-            ///<li> If the input is '<password>' (and the user already gave his username)
+            // If the input is '<password>' (and the user already gave his username)
             case LG:
-            {
-                // login+pass ok
+            { 
                 std::string pw = inputBuffer;
 
+                // If Username and password ok
                 if (sAccountMgr.CheckPassword(accId, pw))
                 {
                     stage = OK;
@@ -242,7 +231,7 @@ int RASocket::handle_input(ACE_HANDLE)
                 }
                 else
                 {
-                    ///- Else deny access
+                    // Else deny access
                     sendf("-Wrong pass.\r\n");
                     sLog.outRALog("User account %u has failed to log in.", accId);
                     if (bSecure)
@@ -255,7 +244,7 @@ int RASocket::handle_input(ACE_HANDLE)
                 }
                 break;
             }
-            ///<li> If user is logged, parse and execute the command
+            // If user is logged in: Parse and execute the command
             case OK:
                 if (strlen(inputBuffer))
                 {
@@ -275,11 +264,11 @@ int RASocket::handle_input(ACE_HANDLE)
                 ///</ul>
         };
     }
-    // no enter yet? wait for next input...
+    // No enter yet? wait for next input...
     return 0;
 }
 
-/// Output function
+// Output function
 void RASocket::zprint(void* callbackArg, const char* szText)
 {
     if (!szText)

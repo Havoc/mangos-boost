@@ -55,7 +55,7 @@ char serviceDescription[] = "Massive Network Game Object Server";
  *  1 - running
  *  2 - paused
  */
-int m_ServiceStatus = -1;
+int serviceStatus = -1;
 #else
 #include "PosixDaemon.h"
 #endif
@@ -337,8 +337,8 @@ extern int main(int argc, char** argv)
             LoginDatabase.Ping();
         }
 #ifdef WIN32
-        if (m_ServiceStatus == 0) stopEvent = true;
-        while (m_ServiceStatus == 2) Sleep(1000);
+        if (serviceStatus == 0) stopEvent = true;
+        while (serviceStatus == 2) Sleep(1000);
 #endif
     }
 

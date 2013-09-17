@@ -24,10 +24,9 @@ set(EXECUTABLE_SRCS
     MaNGOSsoap.cpp
     MaNGOSsoap.h
     Main.cpp
-    Master.cpp
-    Master.h
-    RASocket.cpp
-    RASocket.h
+    FreezeDetector.h
+    RemoteAdministration.cpp
+    RemoteAdministration.h
     soapC.cpp
     soapH.h
     soapServer.cpp

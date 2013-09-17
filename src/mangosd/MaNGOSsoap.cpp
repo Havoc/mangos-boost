@@ -18,11 +18,11 @@
 
 #include "MaNGOSsoap.h"
 
-#define POOL_SIZE   5
+#define POOL_SIZE 5
 
 void MaNGOSsoapRunnable::run()
 {
-    // create pool
+    // Create pool
     SOAPWorkingThread pool;
     pool.activate(THR_NEW_LWP | THR_JOINABLE, POOL_SIZE);
 
@@ -33,7 +33,7 @@ void MaNGOSsoapRunnable::run()
     soap_set_omode(&soap, SOAP_C_UTFSTRING);
     m = soap_bind(&soap, m_host.c_str(), m_port, 100);
 
-    // check every 3 seconds if world ended
+    // Check every 3 seconds if world ended
     soap.accept_timeout = 3;
 
     soap.recv_timeout = 5;
@@ -52,17 +52,19 @@ void MaNGOSsoapRunnable::run()
 
         if (s < 0)
         {
-            // ran into an accept timeout
+            // Ran into an accept timeout
             continue;
         }
 
         DEBUG_LOG("MaNGOSsoap: accepted connection from IP=%d.%d.%d.%d", (int)(soap.ip >> 24) & 0xFF, (int)(soap.ip >> 16) & 0xFF, (int)(soap.ip >> 8) & 0xFF, (int)soap.ip & 0xFF);
-        struct soap* thread_soap = soap_copy(&soap);// make a safe copy
+        // Make a safe copy
+        struct soap* thread_soap = soap_copy(&soap);
 
         ACE_Message_Block* mb = new ACE_Message_Block(sizeof(struct soap*));
         ACE_OS::memcpy(mb->wr_ptr(), &thread_soap, sizeof(struct soap*));
         pool.putq(mb);
     }
+
     pool.msg_queue()->deactivate();
     pool.wait();
 
@@ -78,9 +80,9 @@ void SOAPWorkingThread::process_message(ACE_Message_Block* mb)
     mb->release();
 
     soap_serve(soap);
-    soap_destroy(soap); // dealloc C++ data
-    soap_end(soap); // dealloc data and clean up
-    soap_done(soap); // detach soap struct
+    soap_destroy(soap); // Dealloc C++ data
+    soap_end(soap);     // Dealloc data and clean up
+    soap_done(soap);    // Detach soap struct
     free(soap);
 }
 /*
@@ -122,22 +124,20 @@ int ns1__executeCommand(soap* soap, char* command, char** result)
     DEBUG_LOG("MaNGOSsoap: got command '%s'", command);
     SOAPCommand connection;
 
-    // commands are executed in the world thread. We have to wait for them to be completed
+    // Commands are executed in the world thread. We have to wait for them to be completed
     {
         // CliCommandHolder will be deleted from world, accessing after queueing is NOT save
         CliCommandHolder* cmd = new CliCommandHolder(accountId, SEC_CONSOLE, &connection, command, &SOAPCommand::print, &SOAPCommand::commandFinished);
         sWorld.QueueCliCommand(cmd);
     }
 
-    // wait for callback to complete command
+    // Wait for callback to complete command
 
     int acc = connection.pendingCommands.acquire();
     if (acc)
-    {
         sLog.outError("MaNGOSsoap: Error while acquiring lock, acc = %i, errno = %u", acc, errno);
-    }
 
-    // alright, command finished
+    // Alright, command finished
 
     char* printBuffer = soap_strdup(soap, connection.m_printBuffer.c_str());
     if (connection.hasCommandSucceeded())

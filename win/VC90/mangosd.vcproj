@@ -688,19 +688,15 @@
 			>
 		</File>
 		<File
-			RelativePath="..\..\src\mangosd\Master.cpp"
+			RelativePath="..\..\src\mangosd\FreezeDetector.h"
 			>
 		</File>
 		<File
-			RelativePath="..\..\src\mangosd\Master.h"
+			RelativePath="..\..\src\mangosd\RemoteAdministration.cpp"
 			>
 		</File>
 		<File
-			RelativePath="..\..\src\mangosd\RASocket.cpp"
-			>
-		</File>
-		<File
-			RelativePath="..\..\src\mangosd\RASocket.h"
+			RelativePath="..\..\src\mangosd\RemoteAdministration.h"
 			>
 		</File>
 		<File
