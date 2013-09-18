@@ -19,22 +19,21 @@
 #ifndef PATCH_HANDLER_H
 #define PATCH_HANDLER_H
 
-#include <ace/Synch_Traits.h>
+/*#include <ace/Synch_Traits.h>
 #include <ace/Svc_Handler.h>
 #include <ace/SOCK_Stream.h>
-#include <ace/Auto_Ptr.h>
+#include <ace/Auto_Ptr.h>*/
+#include <map>
+#include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/path.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <map>
 #include <openssl/bn.h>
 #include <openssl/md5.h>
 #include "Network/NetworkBuffer.h"
 #include "Network/ProtocolDefinitions.h"
 #include "Policies/Singleton.h"
 
-/**
- * @brief Caches MD5 hash of client patches present on the server
- */
+/// Caches MD5 hash of client patches present on the server
 class PatchCache
 {
 public:
@@ -72,10 +71,10 @@ private:
 class PatchHandler : public boost::enable_shared_from_this<PatchHandler>
 {
 public:
-    PatchHandler(protocol::Socket& socket, ACE_HANDLE patch);
+    PatchHandler(protocol::Socket& socket, boost::filesystem::fstream& fs_patch);
     virtual ~PatchHandler();
 
-    bool open();
+    bool Open();
 
 protected:
     void TransmitFile();
@@ -90,7 +89,8 @@ private:
     protocol::Socket& socket_;
     boost::asio::deadline_timer timer_;
 
-    ACE_HANDLE patch_fd_;
+    boost::filesystem::fstream& fs_patch_;
+
     NetworkBuffer send_buffer_;
 };
 

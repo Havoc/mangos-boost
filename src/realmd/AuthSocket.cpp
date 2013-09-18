@@ -16,24 +16,18 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "Common.h"
-#include "Database/DatabaseEnv.h"
-#include "Config/Config.h"
-#include "Log.h"
-#include "RealmList.h"
-#include "AuthSocket.h"
-#include "AuthCodes.h"
-#include "PatchHandler.h"
-
-#include <openssl/md5.h>
-//#include "Util.h" -- for commented utf8ToUpperOnlyLatin
-
-#include <ace/OS_NS_unistd.h>
-#include <ace/OS_NS_fcntl.h>
-#include <ace/OS_NS_sys_stat.h>
-
-#include <boost/filesystem/path.hpp>
 #include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <openssl/md5.h>
+#include "AuthCodes.h"
+#include "AuthSocket.h"
+#include "Common.h"
+#include "Config/Config.h"
+#include "Database/DatabaseEnv.h"
+#include "Log.h"
+#include "PatchHandler.h"
+#include "RealmList.h"
+//#include "Util.h" -- for commented utf8ToUpperOnlyLatin
 
 extern DatabaseType LoginDatabase;
 
@@ -173,14 +167,13 @@ AuthSocket::AuthSocket(NetworkManager& manager, NetworkThread& owner) : Socket(m
     account_security_level_ = SEC_PLAYER;
 
     build_ = 0;
-    patch_ = ACE_INVALID_HANDLE;
 }
 
 /// Close patch file descriptor before leaving
 AuthSocket::~AuthSocket()
 {
-    if (patch_ != ACE_INVALID_HANDLE)
-        ACE_OS::close(patch_);
+    if (patch_.is_open())
+        patch_.close();
 }
 
 /// Accept the connection and set the s random value for SRP6
@@ -482,32 +475,30 @@ bool AuthSocket::HandleLogonChallenge()
 bool AuthSocket::HandleLogonProof()
 {
     DEBUG_LOG("Entering _HandleLogonProof");
-    ///- Read the packet
+
+    // Read the packet
     sAuthLogonProof_C lp;
     if (!Read((char*)&lp, sizeof(sAuthLogonProof_C)))
         return false;
 
-    ///- Check if the client has one of the expected version numbers
+    // Check if the client has one of the expected version numbers
     bool valid_version = FindBuildInfo(build_) != NULL;
 
-    /// <ul><li> If the client has no valid version
+    //If the client has no valid version
     if (!valid_version)
     {
-        if (this->patch_ != ACE_INVALID_HANDLE)
+        if (patch_.is_open())
             return false;
 
-        ///- Check if we have the apropriate patch on the disk
-        // file looks like: 65535enGB.mpq
+        // Check if we have the apropriate patch on the disk
+        // File looks like: 65535enGB.mpq
         char tmp[64];
-
         snprintf(tmp, 24, "./patches/%d%s.mpq", build_, localization_name_.c_str());
+        boost::filesystem::path file_path(tmp);
 
-        boost::filesystem::path filename = tmp;
-        patch_ = ACE_OS::open(boost::filesystem::absolute(filename).generic_wstring().c_str(), GENERIC_READ | FILE_FLAG_SEQUENTIAL_SCAN);
-
-        if (patch_ == ACE_INVALID_HANDLE)
+        if (!boost::filesystem::exists(file_path))
         {
-            // no patch found
+            // No patch found
             ByteBuffer pkt;
             pkt << (uint8) CMD_AUTH_LOGON_CHALLENGE;
             pkt << (uint8) 0x00;
@@ -517,38 +508,41 @@ bool AuthSocket::HandleLogonProof()
             SendPacket((char const*) pkt.contents(), pkt.size());
             return true;
         }
-
-
-        ACE_OFF_T file_size = ACE_OS::filesize(this->patch_);
-
-        if (file_size == -1)
+        else
         {
-            CloseSocket();
-            return false;
+            // Patch found
+            patch_.open(file_path);
+            boost::uintmax_t file_size = boost::filesystem::file_size(file_path);
+
+            if (file_size == -1)
+            {
+                CloseSocket();
+                return false;
+            }
+
+            // Send XFER_INITIATE packet to Client
+            XFER_INIT xferh;
+
+            if (!sPatchCache.GetHash(tmp, (uint8*) &xferh.md5))
+            {
+                // Calculate patch md5, happens if patch was added while realmd was running
+                sPatchCache.LoadPatchMD5(tmp);
+                sPatchCache.GetHash(tmp, (uint8*) &xferh.md5);
+            }
+
+            uint8 data[2] = { CMD_AUTH_LOGON_PROOF, WOW_FAIL_VERSION_UPDATE };
+            SendPacket((const char*) data, sizeof(data));
+
+            memcpy(&xferh, "0\x05Patch", 7);
+            xferh.cmd = CMD_XFER_INITIATE;
+            xferh.file_size = file_size;
+
+            SendPacket((const char*) &xferh, sizeof(xferh));
+            return true;
         }
-
-        XFER_INIT xferh;
-
-        if (!sPatchCache.GetHash(tmp, (uint8*)&xferh.md5))
-        {
-            // calculate patch md5, happens if patch was added while realmd was running
-            sPatchCache.LoadPatchMD5(tmp);
-            sPatchCache.GetHash(tmp, (uint8*)&xferh.md5);
-        }
-
-        uint8 data[2] = { CMD_AUTH_LOGON_PROOF, WOW_FAIL_VERSION_UPDATE};
-        SendPacket((const char*)data, sizeof(data));
-
-        memcpy(&xferh, "0\x05Patch", 7);
-        xferh.cmd = CMD_XFER_INITIATE;
-        xferh.file_size = file_size;
-
-        SendPacket((const char*) &xferh, sizeof(xferh));
-        return true;
     }
-    /// </ul>
 
-    ///- Continue the SRP6 calculation based on data received from the client
+    // Continue the SRP6 calculation based on data received from the client
     BigNumber A;
 
     A.SetBinary(lp.A, 32);
@@ -843,90 +837,6 @@ bool AuthSocket::HandleRealmList()
     return true;
 }
 
-bool AuthSocket::HandleXferResume()
-{
-    DEBUG_LOG("Entering _HandleXferResume");
-
-    if (ReceivedDataLength() < 9)
-        return false;
-
-    ReadSkip(1);
-
-    uint64 start_pos;
-    Read((char*)&start_pos, 8);
-
-    if (patch_ == ACE_INVALID_HANDLE)
-    {
-        CloseSocket();
-        return false;
-    }
-
-    ACE_OFF_T file_size = ACE_OS::filesize(patch_);
-
-    if (file_size == -1 || start_pos >= (uint64)file_size)
-    {
-        CloseSocket();
-        return false;
-    }
-
-    if (ACE_OS::lseek(patch_, start_pos, SEEK_SET) == -1)
-    {
-        CloseSocket();
-        return false;
-    }
-
-    InitPatch();
-
-    return true;
-}
-
-bool AuthSocket::HandleXferCancel()
-{
-    DEBUG_LOG("Entering _HandleXferCancel");
-    ReadSkip(1);
-    CloseSocket();
-    return true;
-}
-
-bool AuthSocket::HandleXferAccept()
-{
-    DEBUG_LOG("Entering _HandleXferAccept");
-    ReadSkip(1);
-    InitPatch();
-    return true;
-}
-
-void AuthSocket::SetVSFields(const std::string& rI)
-{
-    s.SetRand(s_BYTE_SIZE * 8);
-
-    BigNumber I;
-    I.SetHexStr(rI.c_str());
-
-    // In case of leading zeros in the rI hash, restore them
-    uint8 mDigest[SHA_DIGEST_LENGTH];
-    memset(mDigest, 0, SHA_DIGEST_LENGTH);
-    if (I.GetNumBytes() <= SHA_DIGEST_LENGTH)
-        memcpy(mDigest, I.AsByteArray(), I.GetNumBytes());
-
-    std::reverse(mDigest, mDigest + SHA_DIGEST_LENGTH);
-
-    Sha1Hash sha;
-    sha.UpdateData(s.AsByteArray(), s.GetNumBytes());
-    sha.UpdateData(mDigest, SHA_DIGEST_LENGTH);
-    sha.Finalize();
-    BigNumber x;
-    x.SetBinary(sha.GetDigest(), sha.GetLength());
-    v = g.ModExp(x, N);
-    // No SQL injection (username escaped)
-    const char* v_hex, *s_hex;
-    v_hex = v.AsHexStr();
-    s_hex = s.AsHexStr();
-    LoginDatabase.PExecute("UPDATE account SET v = '%s', s = '%s' WHERE username = '%s'", v_hex, s_hex, safe_login_.c_str());
-    OPENSSL_free((void*) v_hex);
-    OPENSSL_free((void*) s_hex);
-}
-
 void AuthSocket::SendProof(Sha1Hash sha)
 {
     switch (build_)
@@ -1098,8 +1008,97 @@ void AuthSocket::LoadRealmlist(ByteBuffer& pkt, uint32 acctid)
 void AuthSocket::InitPatch()
 {
     PatchHandlerPtr handler(new PatchHandler(socket(), patch_));
-    patch_ = ACE_INVALID_HANDLE;
 
-    if (!handler->open())
+    if (!handler->Open())
         CloseSocket();
+}
+
+bool AuthSocket::HandleXferAccept()
+{
+    DEBUG_LOG("Entering _HandleXferAccept");
+    ReadSkip(1);
+    InitPatch();
+    return true;
+}
+
+bool AuthSocket::HandleXferCancel()
+{
+    DEBUG_LOG("Entering _HandleXferCancel");
+    ReadSkip(1);
+    CloseSocket();
+    return true;
+}
+
+bool AuthSocket::HandleXferResume()
+{
+    DEBUG_LOG("Entering _HandleXferResume");
+
+    if (ReceivedDataLength() < 9)
+        return false;
+
+    ReadSkip(1);
+
+    uint64 start_pos;
+    Read((char*)&start_pos, 8);
+
+    if (!patch_.is_open())
+    {
+        CloseSocket();
+        return false;
+    }
+
+    patch_.seekg(0, patch_.end);
+    uint64 file_size = patch_.tellg();
+    patch_.seekg(0, patch_.beg);
+
+    if (file_size == -1 || start_pos >= file_size)
+    {
+        CloseSocket();
+        return false;
+    }
+
+    try
+    {
+        patch_.seekg(0, start_pos);
+    }
+    catch (boost::filesystem::fstream::failure&)
+    {
+        CloseSocket();
+        return false;
+    }
+
+    InitPatch();
+
+    return true;
+}
+
+void AuthSocket::SetVSFields(const std::string& rI)
+{
+    s.SetRand(s_BYTE_SIZE * 8);
+
+    BigNumber I;
+    I.SetHexStr(rI.c_str());
+
+    // In case of leading zeros in the rI hash, restore them
+    uint8 mDigest[SHA_DIGEST_LENGTH];
+    memset(mDigest, 0, SHA_DIGEST_LENGTH);
+    if (I.GetNumBytes() <= SHA_DIGEST_LENGTH)
+        memcpy(mDigest, I.AsByteArray(), I.GetNumBytes());
+
+    std::reverse(mDigest, mDigest + SHA_DIGEST_LENGTH);
+
+    Sha1Hash sha;
+    sha.UpdateData(s.AsByteArray(), s.GetNumBytes());
+    sha.UpdateData(mDigest, SHA_DIGEST_LENGTH);
+    sha.Finalize();
+    BigNumber x;
+    x.SetBinary(sha.GetDigest(), sha.GetLength());
+    v = g.ModExp(x, N);
+    // No SQL injection (username escaped)
+    const char* v_hex, *s_hex;
+    v_hex = v.AsHexStr();
+    s_hex = s.AsHexStr();
+    LoginDatabase.PExecute("UPDATE account SET v = '%s', s = '%s' WHERE username = '%s'", v_hex, s_hex, safe_login_.c_str());
+    OPENSSL_free((void*) v_hex);
+    OPENSSL_free((void*) s_hex);
 }

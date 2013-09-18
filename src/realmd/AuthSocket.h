@@ -20,6 +20,7 @@
 #define AUTH_SOCKET_H
 
 #include <string>
+#include <boost/filesystem/fstream.hpp>
 #include "Common.h"
 #include "Auth/BigNumber.h"
 #include "Auth/Sha1.h"
@@ -54,18 +55,17 @@ private:
     bool HandleReconnectChallenge();
     bool HandleReconnectProof();
     bool HandleRealmList();
+    void SendProof(Sha1Hash sha);
+    void LoadRealmlist(ByteBuffer& pkt, uint32 acctid);
 
     // Patch transfer handlers
-    bool HandleXferResume();
-    bool HandleXferCancel();
+    void InitPatch();
     bool HandleXferAccept();
+    bool HandleXferCancel();
+    bool HandleXferResume();
 
     // Make the SRP6 calculation based on the hash in the database
     void SetVSFields(const std::string& rI);
-
-    void SendProof(Sha1Hash sha);
-    void LoadRealmlist(ByteBuffer& pkt, uint32 acctid);
-    void InitPatch();
 
     // SRP6
     BigNumber N, s, g, v;
@@ -85,7 +85,7 @@ private:
     // between enUS and enGB, which is important for the patch system
     std::string localization_name_;
 
-    ACE_HANDLE patch_;
+    boost::filesystem::fstream patch_;
 };
 
 #endif // AUTH_SOCKET_H

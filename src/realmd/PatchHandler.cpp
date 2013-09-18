@@ -16,18 +16,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "PatchHandler.h"
-#include <ace/OS_NS_sys_socket.h>
-#include <ace/OS_NS_dirent.h>
-#include <ace/OS_NS_errno.h>
-#include <ace/OS_NS_unistd.h>
-#include <ace/os_include/netinet/os_tcp.h>
 #include <boost/bind.hpp>
-#include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/operations.hpp>
 #include "AuthCodes.h"
 #include "Common.h"
 #include "Log.h"
+#include "PatchHandler.h"
 
 INSTANTIATE_SINGLETON_1(PatchCache);
 
@@ -96,13 +90,15 @@ void PatchCache::LoadPatchMD5(const boost::filesystem::path& p)
 bool PatchCache::GetHash(const char* pat, uint8 mymd5[MD5_DIGEST_LENGTH])
 {
     for (Patches::iterator i = patches_.begin(); i != patches_.end(); ++i)
+    {
         if (!stricmp(pat, i->first.c_str()))
         {
             memcpy(mymd5, i->second->md5, MD5_DIGEST_LENGTH);
             return true;
         }
+    }
 
-        return false;
+    return false;
 }
 
 void PatchCache::LoadPatchesInfo()
@@ -134,8 +130,8 @@ void PatchCache::LoadPatchesInfo()
     }
 }
 
-PatchHandler::PatchHandler(protocol::Socket& socket, ACE_HANDLE patch) : socket_(socket), timer_(socket.get_io_service(),
-    boost::posix_time::seconds(1)), patch_fd_(patch), send_buffer_(sizeof(Chunk))
+PatchHandler::PatchHandler(protocol::Socket& socket, boost::filesystem::fstream& fs_patch) : socket_(socket), fs_patch_(fs_patch),
+    timer_(socket.get_io_service(), boost::posix_time::seconds(1)), send_buffer_(sizeof(Chunk))
 {
     Chunk* data = (Chunk*)send_buffer_.read_data();
     data->cmd = CMD_XFER_DATA;
@@ -144,8 +140,8 @@ PatchHandler::PatchHandler(protocol::Socket& socket, ACE_HANDLE patch) : socket_
 
 PatchHandler::~PatchHandler()
 {
-    if (patch_fd_ != ACE_INVALID_HANDLE)
-        ACE_OS::close(patch_fd_);
+    if (fs_patch_.is_open())
+        fs_patch_.close();
 }
 
 size_t PatchHandler::offset() const
@@ -154,9 +150,9 @@ size_t PatchHandler::offset() const
     return sizeof(Chunk) - sizeof(chunk->data);
 }
 
-bool PatchHandler::open()
+bool PatchHandler::Open()
 {
-    if (patch_fd_ == ACE_INVALID_HANDLE)
+    if (!fs_patch_.is_open())
         return false;
 
     timer_.async_wait(boost::bind(&PatchHandler::OnTimeout, shared_from_this(), boost::asio::placeholders::error));
@@ -174,15 +170,15 @@ void PatchHandler::OnTimeout(const boost::system::error_code& error)
 void PatchHandler::TransmitFile()
 {
     send_buffer_.Reset();
-
     Chunk* data = (Chunk*)send_buffer_.read_data();
+    fs_patch_.read((char*)data->data, sizeof(data->data));
 
-    ssize_t r = ACE_OS::read(patch_fd_, data->data, sizeof(data->data));
-    if (r <= 0)
+    std::streamsize size = fs_patch_.gcount();
+    if (size <= 0)
         return;
 
-    data->data_size = (uint16)r;
-    send_buffer_.Commit(size_t(r) + offset());
+    data->data_size = (uint16) size;
+    send_buffer_.Commit(size_t(size) + offset());
 
     StartAsyncWrite();
 }
