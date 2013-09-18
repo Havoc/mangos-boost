@@ -119,7 +119,7 @@ void NetworkManager::OnNewConnection(SocketPtr connection, const boost::system::
         return;
     }
     
-    if (!connection->open())
+    if (!connection->Open())
     {
         sLog.outError("Unable to start new client connection!");
 

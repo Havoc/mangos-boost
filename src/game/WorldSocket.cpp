@@ -131,15 +131,15 @@ bool WorldSocket::SendPacket(const WorldPacket& pct)
     ServerPktHeader header(pct.size() + 2, pct.GetOpcode());
     m_Crypt.EncryptSend((uint8*)header.header, header.getHeaderLength());
 
-    GuardType Guard( m_OutBufferLock );
+    GuardType Guard(out_buffer_lock_);
 
-    if (m_OutBuffer->space() >= pct.size() + header.getHeaderLength())
+    if (out_buffer_->space() >= pct.size() + header.getHeaderLength())
     {
         // Put the packet on the buffer.
-        if (!m_OutBuffer->Write(header.header, header.getHeaderLength()))
+        if (!out_buffer_->Write(header.header, header.getHeaderLength()))
             MANGOS_ASSERT(false);
 
-        if (!pct.empty() && !m_OutBuffer->Write(pct.contents(), pct.size()))
+        if (!pct.empty() && !out_buffer_->Write(pct.contents(), pct.size()))
             MANGOS_ASSERT(false);
     }
     else
@@ -148,14 +148,14 @@ bool WorldSocket::SendPacket(const WorldPacket& pct)
         throw std::exception("network write buffer is too small to accommodate packet");
     }
 
-    start_async_send();
+    StartAsyncSend();
 
     return true;
 }
 
-bool WorldSocket::open()
+bool WorldSocket::Open()
 {
-   if( !Socket::open() )
+   if (!Socket::Open())
        return false;
 
     // Send startup packet.
@@ -174,16 +174,16 @@ bool WorldSocket::open()
     return SendPacket(packet);
 }
 
-bool WorldSocket::process_incoming_data()
+bool WorldSocket::ProcessIncomingData()
 {
-    while (m_ReadBuffer->length() > 0)
+    while (read_buffer_->length() > 0)
     {
         if (m_Header.space() > 0)
         {
             // need to receive the header
-            const size_t to_header = (m_ReadBuffer->length() > m_Header.space() ? m_Header.space() : m_ReadBuffer->length());
-            m_Header.Write(m_ReadBuffer->read_data(), to_header);
-            m_ReadBuffer->Consume(to_header);
+            const size_t to_header = (read_buffer_->length() > m_Header.space() ? m_Header.space() : read_buffer_->length());
+            m_Header.Write(read_buffer_->read_data(), to_header);
+            read_buffer_->Consume(to_header);
 
             if (m_Header.space() > 0)
                 return true;
@@ -206,9 +206,9 @@ bool WorldSocket::process_incoming_data()
         if (m_RecvPct.space() > 0)
         {
             // need more data in the payload
-            const size_t to_data = (m_ReadBuffer->length() > m_RecvPct.space() ? m_RecvPct.space() : m_ReadBuffer->length());
-            m_RecvPct.Write(m_ReadBuffer->read_data(), to_data);
-            m_ReadBuffer->Consume(to_data);
+            const size_t to_data = (read_buffer_->length() > m_RecvPct.space() ? m_RecvPct.space() : read_buffer_->length());
+            m_RecvPct.Write(read_buffer_->read_data(), to_data);
+            read_buffer_->Consume(to_data);
 
             if (m_RecvPct.space() > 0)
                 return true;

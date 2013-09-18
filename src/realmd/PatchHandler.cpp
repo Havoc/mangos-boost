@@ -16,10 +16,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/** \file
-  \ingroup realmd
-  */
-
 #include "PatchHandler.h"
 #include <ace/OS_NS_sys_socket.h>
 #include <ace/OS_NS_dirent.h>
@@ -56,13 +52,10 @@ struct Chunk
 #pragma pack(pop)
 #endif
 
-PatchHandler::PatchHandler(protocol::Socket& socket, ACE_HANDLE patch) :
-    m_socket( socket ),
-    m_timer( m_socket.get_io_service(), boost::posix_time::seconds(1) ),
-    patch_fd_( patch ),
-    m_sendBuffer( sizeof(Chunk) )
+PatchHandler::PatchHandler(protocol::Socket& socket, ACE_HANDLE patch) : socket_(socket), timer_(socket.get_io_service(),
+    boost::posix_time::seconds(1)), patch_fd_(patch), send_buffer_(sizeof(Chunk))
 {
-    Chunk* data = (Chunk*)m_sendBuffer.read_data();
+    Chunk* data = (Chunk*)send_buffer_.read_data();
     data->cmd = CMD_XFER_DATA;
     data->data_size = 0;
 }
@@ -75,66 +68,64 @@ PatchHandler::~PatchHandler()
 
 size_t PatchHandler::offset() const
 {
-    Chunk* chunk = (Chunk*)m_sendBuffer.read_data();
+    Chunk* chunk = (Chunk*)send_buffer_.read_data();
     return sizeof(Chunk) - sizeof(chunk->data);
 }
 
 bool PatchHandler::open()
 {
-    if ( patch_fd_ == ACE_INVALID_HANDLE)
+    if (patch_fd_ == ACE_INVALID_HANDLE)
         return false;
 
-    m_timer.async_wait( boost::bind(&PatchHandler::on_timeout, shared_from_this(), boost::asio::placeholders::error) );
+    timer_.async_wait(boost::bind(&PatchHandler::OnTimeout, shared_from_this(), boost::asio::placeholders::error));
     return true;
 }
 
-void PatchHandler::on_timeout( const boost::system::error_code& error)
+void PatchHandler::OnTimeout(const boost::system::error_code& error)
 {
-    if( error )
+    if (error)
         return;
 
-    transmit_file();
+    TransmitFile();
 }
 
-
-void PatchHandler::transmit_file()
+void PatchHandler::TransmitFile()
 {
-    m_sendBuffer.Reset();
+    send_buffer_.Reset();
 
-    Chunk* data = (Chunk*)m_sendBuffer.read_data();
+    Chunk* data = (Chunk*)send_buffer_.read_data();
 
     ssize_t r = ACE_OS::read(patch_fd_, data->data, sizeof(data->data));
-    if( r <= 0 )
+    if (r <= 0)
         return;
 
     data->data_size = (uint16)r;
-    m_sendBuffer.Commit(size_t(r) + offset());
+    send_buffer_.Commit(size_t(r) + offset());
 
-    start_async_write();
+    StartAsyncWrite();
 }
 
-void PatchHandler::start_async_write()
+void PatchHandler::StartAsyncWrite()
 {
-    m_socket.async_write_some(boost::asio::buffer(m_sendBuffer.read_data(), m_sendBuffer.length()),
-        boost::bind(&PatchHandler::on_write_complete, shared_from_this(), 
-                     boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
+    socket_.async_write_some(boost::asio::buffer(send_buffer_.read_data(), send_buffer_.length()),
+        boost::bind(&PatchHandler::OnWriteComplete, shared_from_this(),
+        boost::asio::placeholders::error, boost::asio::placeholders::bytes_transferred));
 }
 
-void PatchHandler::on_write_complete( const boost::system::error_code& error, 
-                                      size_t bytes_transferred )
+void PatchHandler::OnWriteComplete(const boost::system::error_code& error, size_t bytes_transferred)
 {
-    if( error )
+    if (error)
         return;
 
-    m_sendBuffer.Consume(bytes_transferred);
+    send_buffer_.Consume(bytes_transferred);
 
-    if(m_sendBuffer.length() > 0 )
+    if (send_buffer_.length() > 0)
     {
-        start_async_write();
+        StartAsyncWrite();
         return;
     }
 
-    transmit_file();
+    TransmitFile();
 }
 
 PatchCache::~PatchCache()
@@ -213,4 +204,3 @@ void PatchCache::LoadPatchesInfo()
 
     ACE_OS::closedir(dirp);
 }
-

@@ -16,12 +16,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/** \file
-  \ingroup realmd
-  */
-
-#ifndef _PATCHHANDLER_H_
-#define _PATCHHANDLER_H_
+#ifndef PATCH_HANDLER_H
+#define PATCH_HANDLER_H
 
 #include <ace/Synch_Traits.h>
 #include <ace/Svc_Handler.h>
@@ -40,68 +36,62 @@
  */
 class PatchCache
 {
-    public:
-        ~PatchCache();
-        PatchCache();
+public:
+    ~PatchCache();
+    PatchCache();
 
-        struct PATCH_INFO
-        {
-            uint8 md5[MD5_DIGEST_LENGTH];
-        };
+    struct PATCH_INFO
+    {
+        uint8 md5[MD5_DIGEST_LENGTH];
+    };
 
-        typedef std::map<std::string, PATCH_INFO*> Patches;
+    typedef std::map<std::string, PATCH_INFO*> Patches;
 
-        Patches::const_iterator begin() const
-        {
-            return patches_.begin();
-        }
+    Patches::const_iterator begin() const
+    {
+        return patches_.begin();
+    }
 
-        Patches::const_iterator end() const
-        {
-            return patches_.end();
-        }
+    Patches::const_iterator end() const
+    {
+        return patches_.end();
+    }
 
-        void LoadPatchMD5(const char*);
-        bool GetHash(const char* pat, uint8 mymd5[MD5_DIGEST_LENGTH]);
+    void LoadPatchMD5(const char*);
+    bool GetHash(const char* pat, uint8 mymd5[MD5_DIGEST_LENGTH]);
 
-    private:
-        void LoadPatchesInfo();
-        Patches patches_;
+private:
+    void LoadPatchesInfo();
+    Patches patches_;
 };
 
 #define sPatchCache MaNGOS::Singleton<PatchCache>::Instance()
 
 class PatchHandler : public boost::enable_shared_from_this<PatchHandler>
 {
-    public:
-        PatchHandler(protocol::Socket& socket, ACE_HANDLE patch);
-        virtual ~PatchHandler();
+public:
+    PatchHandler(protocol::Socket& socket, ACE_HANDLE patch);
+    virtual ~PatchHandler();
 
-        bool open();
+    bool open();
 
-    protected:
+protected:
+    void TransmitFile();
+    void StartAsyncWrite();
 
-        void on_timeout( const boost::system::error_code& error);
+    void OnWriteComplete(const boost::system::error_code& error, size_t bytes_transferred);
+    void OnTimeout(const boost::system::error_code& error);
 
-        void transmit_file();
+private:
+    size_t offset() const;
 
-        void start_async_write();
+    protocol::Socket& socket_;
+    boost::asio::deadline_timer timer_;
 
-        void on_write_complete( const boost::system::error_code& error,
-                                size_t bytes_transferred );
-
-    private:
-
-        size_t offset() const;
-
-        protocol::Socket& m_socket;
-        boost::asio::deadline_timer m_timer;
-
-        ACE_HANDLE patch_fd_;
-        NetworkBuffer m_sendBuffer;
+    ACE_HANDLE patch_fd_;
+    NetworkBuffer send_buffer_;
 };
 
 typedef boost::shared_ptr<PatchHandler> PatchHandlerPtr;
 
-#endif /* _BK_PATCHHANDLER_H__ */
-
+#endif // PATCH_HANDLER_H
