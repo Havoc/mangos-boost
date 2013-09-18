@@ -23,8 +23,10 @@
 #include <ace/OS_NS_unistd.h>
 #include <ace/os_include/netinet/os_tcp.h>
 #include <boost/bind.hpp>
-#include "Common.h"
+#include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem/operations.hpp>
 #include "AuthCodes.h"
+#include "Common.h"
 #include "Log.h"
 
 INSTANTIATE_SINGLETON_1(PatchCache);
@@ -51,6 +53,86 @@ struct Chunk
 #else
 #pragma pack(pop)
 #endif
+
+PatchCache::PatchCache()
+{
+    LoadPatchesInfo();
+}
+
+PatchCache::~PatchCache()
+{
+    for (Patches::iterator i = patches_.begin(); i != patches_.end(); ++i)
+        delete i->second;
+}
+
+void PatchCache::LoadPatchMD5(const boost::filesystem::path& p)
+{
+    sLog.outDebug("Loading patch info for %s", p.c_str());
+    boost::filesystem::fstream fs(p);
+
+    if (!fs)
+        return;
+
+    // Calculate the MD5 hash
+    MD5_CTX ctx;
+    MD5_Init(&ctx);
+
+    const size_t CHUNCK_SIZE = 4 * 1024;
+    char buffer[CHUNCK_SIZE];
+
+    while (!fs.eof())
+    {
+        fs.read(buffer, CHUNCK_SIZE);
+        MD5_Update(&ctx, buffer, fs.gcount());
+    }
+
+    fs.close();
+
+    // Store the result in the internal patch hash map
+    patches_[p.string()] = new PATCH_INFO;
+    MD5_Final((uint8*)&patches_[p.string()]->md5, &ctx);
+}
+
+bool PatchCache::GetHash(const char* pat, uint8 mymd5[MD5_DIGEST_LENGTH])
+{
+    for (Patches::iterator i = patches_.begin(); i != patches_.end(); ++i)
+        if (!stricmp(pat, i->first.c_str()))
+        {
+            memcpy(mymd5, i->second->md5, MD5_DIGEST_LENGTH);
+            return true;
+        }
+
+        return false;
+}
+
+void PatchCache::LoadPatchesInfo()
+{
+    const int MIN_FILENAME_LENGTH = 8;
+    boost::filesystem::path p = "./patches/";
+
+    try
+    {
+        if (boost::filesystem::exists(p) && boost::filesystem::is_directory(p))
+        {
+            boost::filesystem::directory_iterator end_itr;
+
+            for (boost::filesystem::directory_iterator itr(p); itr != end_itr; ++itr)
+            {
+                if (!boost::filesystem::is_regular_file(itr->status()))
+                    continue;
+
+                if (itr->path().filename().string().length() >= MIN_FILENAME_LENGTH
+                    && itr->path().filename().extension().string() == ".mpq")
+                        LoadPatchMD5(itr->path());
+                
+            }
+        }
+    }
+    catch (const boost::filesystem::filesystem_error& ex)
+    {
+        sLog.outError("PatchCache::LoadPatchInfos: Error occured: %s", ex.what());
+    }
+}
 
 PatchHandler::PatchHandler(protocol::Socket& socket, ACE_HANDLE patch) : socket_(socket), timer_(socket.get_io_service(),
     boost::posix_time::seconds(1)), patch_fd_(patch), send_buffer_(sizeof(Chunk))
@@ -126,81 +208,4 @@ void PatchHandler::OnWriteComplete(const boost::system::error_code& error, size_
     }
 
     TransmitFile();
-}
-
-PatchCache::~PatchCache()
-{
-    for (Patches::iterator i = patches_.begin(); i != patches_.end(); ++i)
-        delete i->second;
-}
-
-PatchCache::PatchCache()
-{
-    LoadPatchesInfo();
-}
-
-void PatchCache::LoadPatchMD5(const char* szFileName)
-{
-    // Try to open the patch file
-    std::string path = "./patches/";
-    path += szFileName;
-    FILE* pPatch = fopen(path.c_str(), "rb");
-    sLog.outDebug("Loading patch info from %s", path.c_str());
-
-    if (!pPatch)
-        return;
-
-    // Calculate the MD5 hash
-    MD5_CTX ctx;
-    MD5_Init(&ctx);
-
-    const size_t check_chunk_size = 4 * 1024;
-
-    uint8 buf[check_chunk_size];
-
-    while (!feof(pPatch))
-    {
-        size_t read = fread(buf, 1, check_chunk_size, pPatch);
-        MD5_Update(&ctx, buf, read);
-    }
-
-    fclose(pPatch);
-
-    // Store the result in the internal patch hash map
-    patches_[path] = new PATCH_INFO;
-    MD5_Final((uint8*) & patches_[path]->md5, &ctx);
-}
-
-bool PatchCache::GetHash(const char* pat, uint8 mymd5[MD5_DIGEST_LENGTH])
-{
-    for (Patches::iterator i = patches_.begin(); i != patches_.end(); ++i)
-        if (!stricmp(pat, i->first.c_str()))
-        {
-            memcpy(mymd5, i->second->md5, MD5_DIGEST_LENGTH);
-            return true;
-        }
-
-    return false;
-}
-
-void PatchCache::LoadPatchesInfo()
-{
-    ACE_DIR* dirp = ACE_OS::opendir(ACE_TEXT("./patches/"));
-
-    if (!dirp)
-        return;
-
-    ACE_DIRENT* dp;
-
-    while ((dp = ACE_OS::readdir(dirp)) != NULL)
-    {
-        int l = strlen(dp->d_name);
-        if (l < 8)
-            continue;
-
-        if (!memcmp(&dp->d_name[l - 4], ".mpq", 4))
-            LoadPatchMD5(dp->d_name);
-    }
-
-    ACE_OS::closedir(dirp);
 }

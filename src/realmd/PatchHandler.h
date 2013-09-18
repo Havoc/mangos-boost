@@ -23,6 +23,7 @@
 #include <ace/Svc_Handler.h>
 #include <ace/SOCK_Stream.h>
 #include <ace/Auto_Ptr.h>
+#include <boost/filesystem/path.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <map>
 #include <openssl/bn.h>
@@ -37,8 +38,8 @@
 class PatchCache
 {
 public:
-    ~PatchCache();
     PatchCache();
+    ~PatchCache();
 
     struct PATCH_INFO
     {
@@ -57,11 +58,12 @@ public:
         return patches_.end();
     }
 
-    void LoadPatchMD5(const char*);
+    void LoadPatchMD5(const boost::filesystem::path& p);
     bool GetHash(const char* pat, uint8 mymd5[MD5_DIGEST_LENGTH]);
 
 private:
     void LoadPatchesInfo();
+
     Patches patches_;
 };
 
