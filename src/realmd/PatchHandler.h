@@ -19,10 +19,6 @@
 #ifndef PATCH_HANDLER_H
 #define PATCH_HANDLER_H
 
-/*#include <ace/Synch_Traits.h>
-#include <ace/Svc_Handler.h>
-#include <ace/SOCK_Stream.h>
-#include <ace/Auto_Ptr.h>*/
 #include <map>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/path.hpp>
