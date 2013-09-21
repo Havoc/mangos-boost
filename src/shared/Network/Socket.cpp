@@ -166,12 +166,12 @@ void Socket::OnWriteComplete(const boost::system::error_code& error, size_t byte
     out_buffer_->Consume(bytes_transferred);
     out_buffer_->Prepare();
 
-    StartAsyncRead();
+    StartAsyncSend();
 }
 
 void Socket::StartAsyncRead()
 {
-    if( IsClosed() )
+    if (IsClosed())
         return;
 
     read_buffer_->Prepare();
