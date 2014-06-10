@@ -1012,7 +1012,7 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
             // Magic Absorption
             if (dummySpell->SpellIconID == 459)             // only this spell have SpellIconID == 459 and dummy aura
             {
-                if (getPowerType() != POWER_MANA)
+                if (GetPowerType() != POWER_MANA)
                     return SPELL_AURA_PROC_FAILED;
 
                 // mana reward
@@ -1146,6 +1146,14 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
 
                     triggered_spell_id = 64413;
                     basepoints[0] = damage * 15 / 100;
+                    break;
+                }
+                // Fingers of Frost
+                case 74396:
+                {
+                    // Remove only single aura from stack and remove holder if its last stack
+                    RemoveAuraHolderFromStack(74396);
+                    return SPELL_AURA_PROC_OK;
                     break;
                 }
             }
@@ -1870,7 +1878,7 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
                     if (!damage)
                         return SPELL_AURA_PROC_FAILED;
 
-                    if (pVictim->getPowerType() == POWER_MANA)
+                    if (pVictim->GetPowerType() == POWER_MANA)
                     {
                         // 2% of maximum base mana
                         basepoints[0] = int32(pVictim->GetCreateMana() * 2 / 100);
@@ -1894,7 +1902,7 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
                 case 25899:                                 // Greater Blessing of Sanctuary
                 {
                     target = this;
-                    switch (target->getPowerType())
+                    switch (target->GetPowerType())
                     {
                         case POWER_MANA:
                             triggered_spell_id = 57319;
@@ -2140,7 +2148,7 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
                     if (GetTypeId() != TYPEID_PLAYER)
                         return SPELL_AURA_PROC_FAILED;
 
-                    switch (this->getPowerType())
+                    switch (this->GetPowerType())
                     {
                         case POWER_ENERGY: triggered_spell_id = 71882; break;
                         case POWER_RAGE:   triggered_spell_id = 71883; break;
@@ -2156,7 +2164,7 @@ SpellAuraProcResult Unit::HandleDummyAuraProc(Unit* pVictim, uint32 damage, Aura
                     if (GetTypeId() != TYPEID_PLAYER)
                         return SPELL_AURA_PROC_FAILED;
 
-                    switch (this->getPowerType())
+                    switch (this->GetPowerType())
                     {
                         case POWER_ENERGY: triggered_spell_id = 71887; break;
                         case POWER_RAGE:   triggered_spell_id = 71886; break;
@@ -3027,6 +3035,12 @@ SpellAuraProcResult Unit::HandleProcTriggerSpellAuraProc(Unit* pVictim, uint32 d
                         (((Creature*)pVictim)->GetCreatureInfo()->MechanicImmuneMask & (1 << (MECHANIC_STUN - 1))) == 0)
                     return SPELL_AURA_PROC_FAILED;
             }
+            else if (auraSpellInfo->SpellIconID == 2947)     // Fingers of Frost
+            {
+                // proc chance for spells in basepoints
+                if (!roll_chance_i(triggerAmount))
+                    return SPELL_AURA_PROC_FAILED;
+            }
             break;
         }
         case SPELLFAMILY_WARRIOR:
@@ -3768,7 +3782,7 @@ SpellAuraProcResult Unit::HandleOverrideClassScriptAuraProc(Unit* pVictim, uint3
             if (!roll_chance_i(50))
                 return SPELL_AURA_PROC_FAILED;
 
-            switch (pVictim->getPowerType())
+            switch (pVictim->GetPowerType())
             {
                 case POWER_MANA:   triggered_spell_id = 28722; break;
                 case POWER_RAGE:   triggered_spell_id = 28723; break;
@@ -3794,7 +3808,7 @@ SpellAuraProcResult Unit::HandleOverrideClassScriptAuraProc(Unit* pVictim, uint3
             if (!roll_chance_i(triggerAmount))
                 return SPELL_AURA_PROC_FAILED;
 
-            switch (pVictim->getPowerType())
+            switch (pVictim->GetPowerType())
             {
                 case POWER_MANA:        triggered_spell_id = 48542; break;
                 case POWER_RAGE:        triggered_spell_id = 48541; break;

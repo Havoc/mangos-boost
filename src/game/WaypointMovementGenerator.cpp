@@ -136,6 +136,7 @@ void WaypointMovementGenerator<Creature>::OnArrived(Creature& creature)
 
         if (behavior->textid[0])
         {
+            int32 textId = behavior->textid[0];
             // Not only one text is set
             if (behavior->textid[1])
             {
@@ -147,10 +148,13 @@ void WaypointMovementGenerator<Creature>::OnArrived(Creature& creature)
                         break;
                 }
 
-                creature.MonsterSay(behavior->textid[rand() % i], LANG_UNIVERSAL);
+                textId = behavior->textid[urand(0, i - 1)];
             }
+
+            if (MangosStringLocale const* textData = sObjectMgr.GetMangosStringLocale(textId))
+                creature.MonsterText(textData, NULL);
             else
-                creature.MonsterSay(behavior->textid[0], LANG_UNIVERSAL);
+                sLog.outErrorDb("%s reached waypoint %u, attempted to do text %i, but required text-data could not be found", creature.GetGuidStr().c_str(), i_currentNode, textId);
         }
     }
 
@@ -360,7 +364,7 @@ void FlightPathMovementGenerator::Reset(Player& player)
     init.Launch();
 }
 
-bool FlightPathMovementGenerator::Update(Player& player, const uint32& diff)
+bool FlightPathMovementGenerator::Update(Player& player, const uint32& /*diff*/)
 {
     uint32 pointId = (uint32)player.movespline->currentPathIdx();
     if (pointId > i_currentNode)

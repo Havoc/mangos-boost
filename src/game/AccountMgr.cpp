@@ -55,6 +55,26 @@ AccountOpResult AccountMgr::CreateAccount(std::string username, std::string pass
     return AOR_OK;                                          // everything's fine
 }
 
+AccountOpResult AccountMgr::CreateAccount(std::string username, std::string password, uint32 expansion)
+{
+    if (utf8length(username) > MAX_ACCOUNT_STR)
+        return AOR_NAME_TOO_LONG;                           // username's too long
+
+    normalizeString(username);
+    normalizeString(password);
+
+    if (GetId(username))
+    {
+        return AOR_NAME_ALREDY_EXIST;                       // username does already exist
+    }
+
+    if (!LoginDatabase.PExecute("INSERT INTO account(username,sha_pass_hash,joindate,expansion) VALUES('%s','%s',NOW(),'%u')", username.c_str(), CalculateShaPassHash(username, password).c_str(), expansion))
+        return AOR_DB_INTERNAL_ERROR;                       // unexpected error
+    LoginDatabase.Execute("INSERT INTO realmcharacters (realmid, acctid, numchars) SELECT realmlist.id, account.id, 0 FROM realmlist,account LEFT JOIN realmcharacters ON acctid=account.id WHERE acctid IS NULL");
+
+    return AOR_OK;                                          // everything's fine
+}
+
 AccountOpResult AccountMgr::DeleteAccount(uint32 accid)
 {
     QueryResult* result = LoginDatabase.PQuery("SELECT 1 FROM account WHERE id='%u'", accid);
@@ -220,12 +240,13 @@ bool AccountMgr::CheckPassword(uint32 accid, std::string passwd)
 bool AccountMgr::normalizeString(std::string& utf8str)
 {
     wchar_t wstr_buf[MAX_ACCOUNT_STR + 1];
-
     size_t wstr_len = MAX_ACCOUNT_STR;
+
     if (!Utf8toWStr(utf8str, wstr_buf, wstr_len))
         return false;
 
-    std::transform(&wstr_buf[0], wstr_buf + wstr_len, &wstr_buf[0], wcharToUpperOnlyLatin);
+    for (uint32 i = 0; i <= wstr_len; ++i)
+        wstr_buf[i] = wcharToUpperOnlyLatin(wstr_buf[i]);
 
     return WStrToUtf8(wstr_buf, wstr_len, utf8str);
 }

@@ -45,6 +45,7 @@
 #include "Util.h"
 #include "Chat.h"
 #include "Vehicle.h"
+#include "TemporarySummon.h"
 #include "SQLStorages.h"
 
 extern pEffect SpellEffects[TOTAL_SPELL_EFFECTS];
@@ -1662,8 +1663,9 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
 
             float x, y;
             float z = m_caster->GetPositionZ();
-            // Ignore the BOUNDING_RADIUS for spells with radius (add a small value to prevent < 0 rounding errors)
-            m_caster->GetNearPoint2D(x, y, radius > 0.001f ? radius - m_caster->GetObjectBoundingRadius() + 0.01f : 2.0f, angle);
+            // Do not search for a free spot. TODO: Should there be searched for a free spot. There was once a discussion that in case this space was impossible (LOS) m_caster's position should be used.
+            // TODO Bring this back to memory and search for it!
+            m_caster->GetNearPoint2D(x, y, radius, angle);
             m_caster->UpdateAllowedPositionZ(x, y, z);
             m_targets.setDestination(x, y, z);
 
@@ -1913,10 +1915,12 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 case SPELL_EFFECT_KILL_CREDIT_PERSONAL:
                 case SPELL_EFFECT_KILL_CREDIT_GROUP:
                     targetB = SPELL_TARGETS_ALL;
+                    break;
                 default:
                     // Select friendly targets for positive effect
                     if (IsPositiveEffect(m_spellInfo, effIndex))
                         targetB = SPELL_TARGETS_FRIENDLY;
+                    break;
             }
 
             UnitList tempTargetUnitMap;
@@ -2159,6 +2163,20 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 if (target->GetTypeId() == TYPEID_UNIT && ((Creature*)target)->IsPet() && ((Pet*)target)->getPetType() == MINI_PET)
                     targetUnitMap.push_back(target);
             break;
+        case TARGET_SUMMONER:
+        {
+            WorldObject* caster = GetAffectiveCasterObject();
+            if (!caster)
+                return;
+
+            if (caster->GetTypeId() == TYPEID_UNIT && ((Creature*)caster)->IsTemporarySummon())
+                targetUnitMap.push_back(((TemporarySummon*)(Creature*)caster)->GetSummoner());
+            else if (caster->GetTypeId() == TYPEID_GAMEOBJECT && !((GameObject*)caster)->HasStaticDBSpawnData())
+                targetUnitMap.push_back(((GameObject*)caster)->GetOwner());
+            else
+                sLog.outError("SPELL: Spell ID %u with target ID %u was used by non temporary summon object %s.", m_spellInfo->Id, targetMode, caster->GetGuidStr().c_str());
+            break;
+        }
         case TARGET_CONTROLLED_VEHICLE:
             if (m_caster->IsBoarded() && m_caster->GetTransportInfo()->IsOnVehicle())
                 targetUnitMap.push_back((Unit*)m_caster->GetTransportInfo()->GetTransport());
@@ -2639,7 +2657,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 }
 
                 float x, y;
-                m_caster->GetNearPoint2D(x, y, radius, angle);
+                m_caster->GetNearPoint2D(x, y, radius + m_caster->GetObjectBoundingRadius(), angle);
                 m_targets.setDestination(x, y, m_caster->GetPositionZ());
             }
 
@@ -2673,7 +2691,7 @@ void Spell::SetTargetMap(SpellEffectIndex effIndex, uint32 targetMode, UnitList&
                 }
 
                 float x, y;
-                currentTarget->GetNearPoint2D(x, y, radius, angle);
+                currentTarget->GetNearPoint2D(x, y, radius + currentTarget->GetObjectBoundingRadius(), angle);
                 m_targets.setDestination(x, y, currentTarget->GetPositionZ());
             }
             break;
@@ -3250,7 +3268,7 @@ void Spell::cast(bool skipCheck)
             // Hand of Reckoning
             else if (m_spellInfo->Id == 62124)
             {
-                if (m_targets.getUnitTarget() && m_targets.getUnitTarget()->getVictim() != m_caster)
+                if (!m_targets.getUnitTarget() || m_targets.getUnitTarget()->GetTargetGuid() != m_caster->GetObjectGuid())
                     AddPrecastSpell(67485);                 // Hand of Rekoning (no typos in name ;) )
             }
             // Divine Shield, Divine Protection or Hand of Protection
@@ -3908,6 +3926,9 @@ void Spell::SendSpellGo()
         castFlags |= CAST_FLAG_PREDICTED_RUNES;             // rune cooldowns list
     }
 
+    if (m_powerCost)
+        castFlags |= CAST_FLAG_PREDICTED_POWER;             // all powerCost spells have this
+
     WorldPacket data(SMSG_SPELL_GO, 50);                    // guess size
 
     if (m_CastItem)
@@ -3926,7 +3947,7 @@ void Spell::SendSpellGo()
     data << m_targets;
 
     if (castFlags & CAST_FLAG_PREDICTED_POWER)              // predicted power
-        data << uint32(0);
+        data << uint32(m_caster->GetPower((Powers)m_spellInfo->powerType));
 
     if (castFlags & CAST_FLAG_PREDICTED_RUNES)              // predicted runes
     {
@@ -5556,7 +5577,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                 // Can be area effect, Check only for players and not check if target - caster (spell can have multiply drain/burn effects)
                 if (m_caster->GetTypeId() == TYPEID_PLAYER)
                     if (Unit* target = m_targets.getUnitTarget())
-                        if (target != m_caster && int32(target->getPowerType()) != m_spellInfo->EffectMiscValue[i])
+                        if (target != m_caster && int32(target->GetPowerType()) != m_spellInfo->EffectMiscValue[i])
                             return SPELL_FAILED_BAD_TARGETS;
                 break;
             }
@@ -5913,7 +5934,7 @@ SpellCastResult Spell::CheckCast(bool strict)
                 if (m_caster->GetTypeId() != TYPEID_PLAYER || m_CastItem)
                     break;
 
-                if (expectedTarget->getPowerType() != POWER_MANA)
+                if (expectedTarget->GetPowerType() != POWER_MANA)
                     return SPELL_FAILED_BAD_TARGETS;
 
                 break;
@@ -7036,13 +7057,13 @@ bool Spell::CheckTargetCreatureType(Unit* target) const
 CurrentSpellTypes Spell::GetCurrentContainer()
 {
     if (IsNextMeleeSwingSpell())
-        return(CURRENT_MELEE_SPELL);
+        return (CURRENT_MELEE_SPELL);
     else if (IsAutoRepeat())
-        return(CURRENT_AUTOREPEAT_SPELL);
+        return (CURRENT_AUTOREPEAT_SPELL);
     else if (IsChanneledSpell(m_spellInfo))
-        return(CURRENT_CHANNELED_SPELL);
+        return (CURRENT_CHANNELED_SPELL);
     else
-        return(CURRENT_GENERIC_SPELL);
+        return (CURRENT_GENERIC_SPELL);
 }
 
 bool Spell::CheckTarget(Unit* target, SpellEffectIndex eff)
@@ -7427,7 +7448,7 @@ void Spell::FillRaidOrPartyManaPriorityTargets(UnitList& targetUnitMap, Unit* me
 
     PrioritizeManaUnitQueue manaUsers;
     for (UnitList::const_iterator itr = targetUnitMap.begin(); itr != targetUnitMap.end(); ++itr)
-        if ((*itr)->getPowerType() == POWER_MANA && !(*itr)->isDead())
+        if ((*itr)->GetPowerType() == POWER_MANA && !(*itr)->isDead())
             manaUsers.push(PrioritizeManaUnitWraper(*itr));
 
     targetUnitMap.clear();
@@ -7641,13 +7662,18 @@ void Spell::GetSpellRangeAndRadius(SpellEffectIndex effIndex, float& radius, uin
                 case 30769:                                 // Pick Red Riding Hood (Karazhan, Big Bad Wolf)
                 case 30835:                                 // Infernal Relay (Karazhan, Prince Malchezaar)
                 case 31347:                                 // Doom (Hyjal Summit, Azgalor)
+                case 32312:                                 // Move 1 (Karazhan, Chess Event)
                 case 33711:                                 // Murmur's Touch (Shadow Labyrinth, Murmur)
+                case 37388:                                 // Move 2 (Karazhan, Chess Event)
                 case 38794:                                 // Murmur's Touch (h) (Shadow Labyrinth, Murmur)
+                case 39338:                                 // Karazhan - Chess, Medivh CHEAT: Hand of Medivh, Target Horde
+                case 39342:                                 // Karazhan - Chess, Medivh CHEAT: Hand of Medivh, Target Alliance
                 case 40834:                                 // Agonizing Flames (BT, Illidan Stormrage)
                 case 41537:                                 // Summon Enslaved Soul (BT, Reliquary of Souls)
                 case 44869:                                 // Spectral Blast (SWP, Kalecgos)
                 case 45391:                                 // Summon Demonic Vapor (SWP, Felmyst)
                 case 45785:                                 // Sinister Reflection Clone (SWP, Kil'jaeden)
+                case 45863:                                 // Cosmetic - Incinerate to Random Target (Borean Tundra)
                 case 45892:                                 // Sinister Reflection (SWP, Kil'jaeden)
                 case 45976:                                 // Open Portal (SWP, M'uru)
                 case 46372:                                 // Ice Spear Target Picker (Slave Pens, Ahune)
@@ -7669,16 +7695,22 @@ void Spell::GetSpellRangeAndRadius(SpellEffectIndex effIndex, float& radius, uin
                 case 62042:                                 // Stormhammer (Ulduar, Thorim)
                 case 62166:                                 // Stone Grip (Ulduar, Kologarn)
                 case 62301:                                 // Cosmic Smash (Ulduar, Algalon)
+                case 62374:                                 // Pursued (Ulduar, Flame Leviathan)
                 case 62488:                                 // Activate Construct (Ulduar, Ignis)
+                case 62577:                                 // Blizzard (Ulduar, Thorim)
+                case 62603:                                 // Blizzard (h) (Ulduar, Thorim)
+                case 62797:                                 // Storm Cloud (Ulduar, Hodir)
                 case 63018:                                 // Searing Light (Ulduar, XT-002)
                 case 63024:                                 // Gravity Bomb (Ulduar, XT-002)
-                case 63387:                                 // Rapid Burst
+                case 63545:                                 // Icicle (Ulduar, Hodir)
                 case 63795:                                 // Psychosis (Ulduar, Yogg-Saron)
                 case 63820:                                 // Summon Scrap Bot Trigger (Ulduar, Mimiron) use for Scrap Bots, hits npc 33856
                 case 64218:                                 // Overcharge (VoA, Emalon)
                 case 64234:                                 // Gravity Bomb (h) (Ulduar, XT-002)
+                case 64402:                                 // Rocket Strike (Ulduar, Mimiron)
                 case 64425:                                 // Summon Scrap Bot Trigger (Ulduar, Mimiron) use for Assault Bots, hits npc 33856
-                case 64531:                                 // Rapid Burst (h)
+                case 64543:                                 // Melt Ice (Ulduar, Hodir)
+                case 64623:                                 // Frost Bomb (Ulduar, Mimiron)
                 case 65121:                                 // Searing Light (h) (Ulduar, XT-002)
                 case 65301:                                 // Psychosis (Ulduar, Yogg-Saron)
                 case 65872:                                 // Pursuing Spikes (ToCrusader, Anub'arak)
@@ -7723,6 +7755,7 @@ void Spell::GetSpellRangeAndRadius(SpellEffectIndex effIndex, float& radius, uin
                     break;
                 case 10258:                                 // Awaken Vault Warder (Uldaman)
                 case 28542:                                 // Life Drain (Naxx, Sapphiron)
+                case 62476:                                 // Icicle (Ulduar, Hodir)
                 case 66013:                                 // Penetrating Cold (10 man) (ToCrusader, Anub'arak)
                 case 67755:                                 // Nerubian Burrower (Mode 1) (ToCrusader, Anub'arak)
                 case 67756:                                 // Nerubian Burrower (Mode 2) (ToCrusader, Anub'arak)
@@ -7738,6 +7771,8 @@ void Spell::GetSpellRangeAndRadius(SpellEffectIndex effIndex, float& radius, uin
                 case 29213:                                 // Curse of the Plaguebringer (Naxx, Noth the Plaguebringer)
                 case 30004:                                 // Flame Wreath (Karazhan, Shade of Aran)
                 case 31298:                                 // Sleep (Hyjal Summit, Anetheron)
+                case 39341:                                 // Karazhan - Chess, Medivh CHEAT: Fury of Medivh, Target Horde
+                case 39344:                                 // Karazhan - Chess, Medivh CHEAT: Fury of Medivh, Target Alliance
                 case 39992:                                 // Needle Spine Targeting (BT, Warlord Najentus)
                 case 40869:                                 // Fatal Attraction (BT, Mother Shahraz)
                 case 41303:                                 // Soul Drain (BT, Reliquary of Souls)
@@ -7746,6 +7781,7 @@ void Spell::GetSpellRangeAndRadius(SpellEffectIndex effIndex, float& radius, uin
                 case 54522:                                 // Summon Ghouls On Scarlet Crusade
                 case 60936:                                 // Surge of Power (h) (Malygos)
                 case 61693:                                 // Arcane Storm (Malygos)
+                case 62477:                                 // Icicle (h) (Ulduar, Hodir)
                 case 63981:                                 // StoneGrip (h) (Ulduar, Kologarn)
                 case 64598:                                 // Cosmic Smash (h) (Ulduar, Algalon)
                 case 64620:                                 // Summon Fire Bot Trigger (Ulduar, Mimiron) hits npc 33856
@@ -7759,6 +7795,7 @@ void Spell::GetSpellRangeAndRadius(SpellEffectIndex effIndex, float& radius, uin
                     break;
                 case 37676:                                 // Insidious Whisper (SSC, Leotheras the Blind)
                 case 38028:                                 // Watery Grave (SSC, Morogrim Tidewalker)
+                case 46650:                                 // Open Brutallus Back Door (SWP, Felmyst)
                 case 67757:                                 // Nerubian Burrower (Mode 3) (ToCrusader, Anub'arak)
                 case 71221:                                 // Gas spore (Mode 1) (ICC, Festergut)
                     unMaxTargets = 4;

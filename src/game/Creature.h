@@ -54,6 +54,7 @@ enum CreatureFlagsExtra
     CREATURE_FLAG_EXTRA_NOT_TAUNTABLE   = 0x00000100,       // creature is immune to taunt auras and effect attack me
     CREATURE_FLAG_EXTRA_AGGRO_ZONE      = 0x00000200,       // creature sets itself in combat with zone on aggro
     CREATURE_FLAG_EXTRA_GUARD           = 0x00000400,       // creature is a guard
+    CREATURE_FLAG_EXTRA_NO_CALL_ASSIST  = 0x00000800,       // creature shouldn't call for assistance on aggro
 };
 
 // GCC have alternative #pragma pack(N) syntax and old gcc version not support pack(push,N), also any gcc version not support it at some platform
@@ -70,91 +71,95 @@ enum CreatureFlagsExtra
 struct CreatureInfo
 {
     uint32  Entry;
-    uint32  DifficultyEntry[MAX_DIFFICULTY - 1];
-    uint32  KillCredit[MAX_KILL_CREDIT];
-    uint32  ModelId[MAX_CREATURE_MODEL];
     char*   Name;
     char*   SubName;
     char*   IconName;
-    uint32  GossipMenuId;
-    uint32  minlevel;
-    uint32  maxlevel;
-    uint32  minhealth;
-    uint32  maxhealth;
-    uint32  minmana;
-    uint32  maxmana;
-    uint32  armor;
-    uint32  faction_A;
-    uint32  faction_H;
-    uint32  npcflag;
-    float   speed_walk;
-    float   speed_run;
-    float   scale;
-    uint32  rank;
-    float   mindmg;
-    float   maxdmg;
-    uint32  dmgschool;
-    uint32  attackpower;
-    float   dmg_multiplier;
-    uint32  baseattacktime;
-    uint32  rangeattacktime;
-    uint32  unit_class;                                     // enum Classes. Note only 4 classes are known for creatures.
-    uint32  unit_flags;                                     // enum UnitFlags mask values
-    uint32  dynamicflags;
-    uint32  family;                                         // enum CreatureFamily values (optional)
-    uint32  trainer_type;
-    uint32  trainer_spell;
-    uint32  trainer_class;
-    uint32  trainer_race;
-    float   minrangedmg;
-    float   maxrangedmg;
-    uint32  rangedattackpower;
-    uint32  type;                                           // enum CreatureType values
-    uint32  type_flags;                                     // enum CreatureTypeFlags mask values
-    uint32  lootid;
-    uint32  pickpocketLootId;
-    uint32  SkinLootId;
-    int32   resistance1;
-    int32   resistance2;
-    int32   resistance3;
-    int32   resistance4;
-    int32   resistance5;
-    int32   resistance6;
-    uint32  PetSpellDataId;
-    uint32  mingold;
-    uint32  maxgold;
-    char const* AIName;
-    uint32  MovementType;
+    uint32  MinLevel;
+    uint32  MaxLevel;
+    uint32  DifficultyEntry[MAX_DIFFICULTY - 1];
+    uint32  ModelId[MAX_CREATURE_MODEL];
+    uint32  FactionAlliance;
+    uint32  FactionHorde;
+    float   Scale;
+    uint32  Family;                                         // enum CreatureFamily values (optional)
+    uint32  CreatureType;                                   // enum CreatureType values
     uint32  InhabitType;
-    float   healthModifier;
-    float   powerModifier;
+    uint32  RegenerateStats;
     bool    RacialLeader;
-    uint32  questItems[6];
-    uint32  movementId;
-    bool    RegenHealth;
-    uint32  vehicleId;
-    uint32  equipmentId;
-    uint32  trainerId;
-    uint32  vendorId;
+    uint32  NpcFlags;
+    uint32  UnitFlags;                                      // enum UnitFlags mask values
+    uint32  DynamicFlags;
+    uint32  ExtraFlags;
+    uint32  CreatureTypeFlags;                              // enum CreatureTypeFlags mask values
+    float   SpeedWalk;
+    float   SpeedRun;
+    uint32  UnitClass;                                      // enum Classes. Note only 4 classes are known for creatures.
+    uint32  Rank;
+    int32   Expansion;                                      // creature expansion, important for stats
+    float   HealthMultiplier;
+    float   PowerMultiplier;
+    float   DamageMultiplier;
+    float   DamageVariance;
+    float   ArmorMultiplier;
+    float   ExperienceMultiplier;
+    uint32  MinLevelHealth;
+    uint32  MaxLevelHealth;
+    uint32  MinLevelMana;
+    uint32  MaxLevelMana;
+    float   MinMeleeDmg;
+    float   MaxMeleeDmg;
+    float   MinRangedDmg;
+    float   MaxRangedDmg;
+    uint32  Armor;
+    uint32  MeleeAttackPower;
+    uint32  RangedAttackPower;
+    uint32  MeleeBaseAttackTime;
+    uint32  RangedBaseAttackTime;
+    uint32  DamageSchool;
+    uint32  MinLootGold;
+    uint32  MaxLootGold;
+    uint32  LootId;
+    uint32  PickpocketLootId;
+    uint32  SkinningLootId;
+    uint32  KillCredit[MAX_KILL_CREDIT];
+    uint32  QuestItems[6];
     uint32  MechanicImmuneMask;
-    uint32  flags_extra;
+    int32   ResistanceHoly;
+    int32   ResistanceFire;
+    int32   ResistanceNature;
+    int32   ResistanceFrost;
+    int32   ResistanceShadow;
+    int32   ResistanceArcane;
+    uint32  PetSpellDataId;
+    uint32  MovementType;
+    uint32  MovementTemplateId;
+    uint32  TrainerType;
+    uint32  TrainerSpell;
+    uint32  TrainerClass;
+    uint32  TrainerRace;
+    uint32  TrainerTemplateId;
+    uint32  VendorTemplateId;
+    uint32  EquipmentTemplateId;
+    uint32  VehicleTemplateId;
+    uint32  GossipMenuId;
+    char const* AIName;
     uint32  ScriptID;
 
     // helpers
     HighGuid GetHighGuid() const
     {
-        return vehicleId ? HIGHGUID_VEHICLE : HIGHGUID_UNIT;
+        return VehicleTemplateId ? HIGHGUID_VEHICLE : HIGHGUID_UNIT;
     }
 
     ObjectGuid GetObjectGuid(uint32 lowguid) const { return ObjectGuid(GetHighGuid(), Entry, lowguid); }
 
     SkillType GetRequiredLootSkill() const
     {
-        if (type_flags & CREATURE_TYPEFLAGS_HERBLOOT)
+        if (CreatureTypeFlags & CREATURE_TYPEFLAGS_HERBLOOT)
             return SKILL_HERBALISM;
-        else if (type_flags & CREATURE_TYPEFLAGS_MININGLOOT)
+        else if (CreatureTypeFlags & CREATURE_TYPEFLAGS_MININGLOOT)
             return SKILL_MINING;
-        else if (type_flags & CREATURE_TYPEFLAGS_ENGINEERLOOT)
+        else if (CreatureTypeFlags & CREATURE_TYPEFLAGS_ENGINEERLOOT)
             return SKILL_ENGINEERING;
         else
             return SKILL_SKINNING;                          // normal case
@@ -162,15 +167,15 @@ struct CreatureInfo
 
     bool IsExotic() const
     {
-        return (type_flags & CREATURE_TYPEFLAGS_EXOTIC);
+        return (CreatureTypeFlags & CREATURE_TYPEFLAGS_EXOTIC);
     }
 
     bool isTameable(bool exotic) const
     {
-        if (type != CREATURE_TYPE_BEAST || family == 0 || (type_flags & CREATURE_TYPEFLAGS_TAMEABLE) == 0)
+        if (CreatureType != CREATURE_TYPE_BEAST || Family == 0 || (CreatureTypeFlags & CREATURE_TYPEFLAGS_TAMEABLE) == 0)
             return false;
 
-        // if can tame exotic then can tame any temable
+        // if can tame exotic then can tame any tameable
         return exotic || !IsExotic();
     }
 };
@@ -229,6 +234,17 @@ struct CreatureDataAddon
     uint32 emote;
     uint32 splineFlags;
     uint32 const* auras;                                    // loaded as char* "spell1 spell2 ... "
+};
+
+// Bases values for given Level and UnitClass
+struct CreatureClassLvlStats
+{
+    uint32  BaseHealth;
+    uint32  BaseMana;
+    float   BaseDamage;
+    float   BaseMeleeAttackPower;
+    float   BaseRangedAttackPower;
+    uint32  BaseArmor;
 };
 
 struct CreatureModelInfo
@@ -311,6 +327,12 @@ enum SelectFlags
     SELECT_FLAG_POWER_RUNIC         = 0x020,
     SELECT_FLAG_IN_MELEE_RANGE      = 0x040,
     SELECT_FLAG_NOT_IN_MELEE_RANGE  = 0x080,
+};
+
+enum RegenStatsFlags
+{
+    REGEN_FLAG_HEALTH               = 0x001,
+    REGEN_FLAG_POWER                = 0x002,
 };
 
 // Vendors
@@ -495,8 +517,8 @@ class MANGOS_DLL_SPEC Creature : public Unit
         bool IsDespawned() const { return getDeathState() ==  DEAD; }
         void SetCorpseDelay(uint32 delay) { m_corpseDelay = delay; }
         bool IsRacialLeader() const { return GetCreatureInfo()->RacialLeader; }
-        bool IsCivilian() const { return GetCreatureInfo()->flags_extra & CREATURE_FLAG_EXTRA_CIVILIAN; }
-        bool IsGuard() const { return GetCreatureInfo()->flags_extra & CREATURE_FLAG_EXTRA_GUARD; }
+        bool IsCivilian() const { return GetCreatureInfo()->ExtraFlags & CREATURE_FLAG_EXTRA_CIVILIAN; }
+        bool IsGuard() const { return GetCreatureInfo()->ExtraFlags & CREATURE_FLAG_EXTRA_GUARD; }
 
         bool CanWalk() const { return GetCreatureInfo()->InhabitType & INHABIT_GROUND; }
         virtual bool CanSwim() const { return GetCreatureInfo()->InhabitType & INHABIT_WATER; }
@@ -517,7 +539,7 @@ class MANGOS_DLL_SPEC Creature : public Unit
             if (IsPet())
                 return false;
 
-            uint32 rank = GetCreatureInfo()->rank;
+            uint32 rank = GetCreatureInfo()->Rank;
             return rank != CREATURE_ELITE_NORMAL && rank != CREATURE_ELITE_RARE;
         }
 
@@ -526,7 +548,7 @@ class MANGOS_DLL_SPEC Creature : public Unit
             if (IsPet())
                 return false;
 
-            return GetCreatureInfo()->rank == CREATURE_ELITE_WORLDBOSS;
+            return GetCreatureInfo()->Rank == CREATURE_ELITE_WORLDBOSS;
         }
 
         uint32 GetLevelForTarget(Unit const* target) const override; // overwrite Unit::GetLevelForTarget for boss level support
@@ -571,8 +593,11 @@ class MANGOS_DLL_SPEC Creature : public Unit
         void UpdateMaxPower(Powers power) override;
         void UpdateAttackPowerAndDamage(bool ranged = false) override;
         void UpdateDamagePhysical(WeaponAttackType attType) override;
-        uint32 GetCurrentEquipmentId() { return m_equipmentId; }
-        float GetSpellDamageMod(int32 Rank);
+        uint32 GetCurrentEquipmentId() const { return m_equipmentId; }
+
+        static float _GetHealthMod(int32 Rank);             ///< Get custom factor to scale health (default 1, CONFIG_FLOAT_RATE_CREATURE_*_HP)
+        static float _GetDamageMod(int32 Rank);             ///< Get custom factor to scale damage (default 1, CONFIG_FLOAT_RATE_*_DAMAGE)
+        static float _GetSpellDamageMod(int32 Rank);        ///< Get custom factor to scale spell damage (default 1, CONFIG_FLOAT_RATE_*_SPELLDAMAGE)
 
         VendorItemData const* GetVendorItems() const;
         VendorItemData const* GetVendorTemplateItems() const;
@@ -682,7 +707,8 @@ class MANGOS_DLL_SPEC Creature : public Unit
         bool HasInvolvedQuest(uint32 quest_id)  const override;
 
         GridReference<Creature>& GetGridRef() { return m_gridRef; }
-        bool IsRegeneratingHealth() { return m_regenHealth; }
+        bool IsRegeneratingHealth() { return GetCreatureInfo()->RegenerateStats & REGEN_FLAG_HEALTH; }
+        bool IsRegeneratingPower() { return GetCreatureInfo()->RegenerateStats & REGEN_FLAG_POWER; }
         virtual uint8 GetPetAutoSpellSize() const { return CREATURE_MAX_SPELLS; }
         virtual uint32 GetPetAutoSpellOnPos(uint8 pos) const
         {
@@ -725,9 +751,6 @@ class MANGOS_DLL_SPEC Creature : public Unit
 
         void _RealtimeSetCreatureInfo();
 
-        static float _GetHealthMod(int32 Rank);
-        static float _GetDamageMod(int32 Rank);
-
         uint32 m_lootMoney;
         ObjectGuid m_lootRecipientGuid;                     // player who will have rights for looting if m_lootGroupRecipient==0 or group disbanded
         uint32 m_lootGroupRecipientId;                      // group who will have rights for looting if set and exist
@@ -737,10 +760,11 @@ class MANGOS_DLL_SPEC Creature : public Unit
         time_t m_respawnTime;                               // (secs) time of next respawn
         uint32 m_respawnDelay;                              // (secs) delay between corpse disappearance and respawning
         uint32 m_corpseDelay;                               // (secs) delay between death and corpse disappearance
+        uint32 m_aggroDelay;                                // (msecs)delay between respawn and aggro due to movement
         float m_respawnradius;
 
         CreatureSubtype m_subtype;                          // set in Creatures subclasses for fast it detect without dynamic_cast use
-        void RegenerateMana();
+        void RegeneratePower();
         void RegenerateHealth();
         MovementGeneratorType m_defaultMovementType;
         Cell m_currentCell;                                 // store current cell where creature listed
@@ -749,7 +773,6 @@ class MANGOS_DLL_SPEC Creature : public Unit
         // below fields has potential for optimization
         bool m_AlreadyCallAssistance;
         bool m_AlreadySearchedAssistance;
-        bool m_regenHealth;
         bool m_AI_locked;
         bool m_isDeadByDefault;
         uint32 m_temporaryFactionFlags;                     // used for real faction changes (not auras etc)

@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <algorithm>
 #include <string>
 #include <sstream>
 #include <assert.h>
@@ -734,7 +735,7 @@ bool change_sql_database()
             fputs(buffer, fout);
         }
 
-        fprintf(fout, "  `required_%s` bit(1) default NULL\n", last_sql_update[i]);
+        fprintf(fout, "  `required_%s` bit(1) DEFAULT NULL\n", last_sql_update[i]);
         while(fgets(buffer, MAX_BUF, fin))
             fputs(buffer, fout);
 

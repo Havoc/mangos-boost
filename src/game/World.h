@@ -35,6 +35,7 @@
 #include <list>
 
 class Object;
+class ObjectGuid;
 class WorldPacket;
 class WorldSession;
 class Player;
@@ -192,6 +193,7 @@ enum eConfigUInt32Values
     CONFIG_UINT32_GUID_RESERVE_SIZE_CREATURE,
     CONFIG_UINT32_GUID_RESERVE_SIZE_GAMEOBJECT,
     CONFIG_UINT32_MIN_LEVEL_FOR_RAID,
+    CONFIG_UINT32_CREATURE_RESPAWN_AGGRO_DELAY,
     CONFIG_UINT32_VALUE_COUNT
 };
 
@@ -345,6 +347,7 @@ enum eConfigBoolValues
     CONFIG_BOOL_VMAP_INDOOR_CHECK,
     CONFIG_BOOL_PET_UNSUMMON_AT_MOUNT,
     CONFIG_BOOL_MMAP_ENABLED,
+    CONFIG_BOOL_PLAYER_COMMANDS,
     CONFIG_BOOL_VALUE_COUNT
 };
 
@@ -593,6 +596,18 @@ class World
         void LoadDBVersion();
         char const* GetDBVersion() { return m_DBVersion.c_str(); }
         char const* GetCreatureEventAIVersion() { return m_CreatureEventAIVersion.c_str(); }
+
+        
+        /**
+        * \brief: force all client to request player data
+        * \param: ObjectGuid guid : guid of the specified player
+        * \returns: void
+        *
+        * Description: InvalidatePlayerDataToAllClient force all connected clients to clear specified player cache
+        * FullName: World::InvalidatePlayerDataToAllClient
+        * Access: public 
+        **/
+        void InvalidatePlayerDataToAllClient(ObjectGuid guid);
 
     protected:
         void _UpdateGameTime();

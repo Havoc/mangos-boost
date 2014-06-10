@@ -18,8 +18,8 @@
 
 #include "SQLStorages.h"
 
-const char CreatureInfosrcfmt[] = "iiiiiiiiiisssiiiiiiiiiiifffiffiifiiiiiiiiiiffiiiiiiiiiiiiiiisiiffliiiiiiiliiiiiis";
-const char CreatureInfodstfmt[] = "iiiiiiiiiisssiiiiiiiiiiifffiffiifiiiiiiiiiiffiiiiiiiiiiiiiiisiiffliiiiiiiliiiiiii";
+const char CreatureInfosrcfmt[] = "isssiiiiiiiiiiifiiiiliiiiiffiiiffffffiiiiffffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiss";
+const char CreatureInfodstfmt[] = "isssiiiiiiiiiiifiiiiliiiiiffiiiffffffiiiiffffiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiisi";
 const char CreatureDataAddonInfofmt[] = "iiibbiis";
 const char CreatureModelfmt[] = "iffbii";
 const char CreatureInfoAddonInfofmt[] = "iiibbiis";

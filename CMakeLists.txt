@@ -31,6 +31,8 @@ option(DEBUG                "Debug mode"                            OFF)
 option(TBB_USE_EXTERNAL     "Use external TBB"                      OFF)
 option(USE_STD_MALLOC       "Use standard malloc instead of TBB"    OFF)
 option(ACE_USE_EXTERNAL     "Use external ACE"                      OFF)
+option(POSTGRESQL           "Use PostgreSQL"                        OFF)
+
 if(PCHSupport_FOUND AND WIN32) # TODO: why only enable it on windows by default?
   option(PCH                "Use precompiled headers"               ON)
 else()
@@ -50,6 +52,10 @@ message(
     CMAKE_INSTALL_PREFIX    Path where the server should be installed to
     PCH                     Use precompiled headers
     DEBUG                   Debug mode
+    INCLUDE_BINDINGS_DIR    Include a script library in src/bindings/ with the
+                            defined name. the name must corespond to the name of
+                            the folder and the folder must contain a valid
+                            CMakeLists.txt
     TBB_USE_EXTERNAL        Use external TBB
     USE_STD_MALLOC          Use standard malloc instead of TBB
     ACE_USE_EXTERNAL        Use external ACE
@@ -183,7 +189,17 @@ endif()
 
 # *nix-specific packages
 if(UNIX)
-  find_package(MySQL REQUIRED)
+  if(POSTGRESQL)
+    find_package(PostgreSQL REQUIRED)
+
+    if(POSTGRESQL_FOUND)
+      include_directories(${POSTGRESQL_INCLUDE_DIRS})
+    endif(POSTGRESQL_FOUND)
+
+  else()
+    find_package(MySQL REQUIRED)
+  endif()
+
   find_package(OpenSSL REQUIRED)
   find_package(ZLIB REQUIRED)
 endif()
@@ -218,6 +234,20 @@ endif()
 
 message(STATUS "MaNGOS-Core revision  : ${GIT_REVISION}")
 message(STATUS "Install server to     : ${CMAKE_INSTALL_PREFIX}")
+
+if(DEFINED INCLUDE_BINDINGS_DIR AND INCLUDE_BINDINGS_DIR)
+  # check if the directory exists
+  if(NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/bindings/${INCLUDE_BINDINGS_DIR})
+    message(FATAL_ERROR "Could not find the script library which was supposed to be: " ${CMAKE_SOURCE_DIR}/src/bindings/${INCLUDE_BINDINGS_DIR})
+  endif()
+  # check if it really contains a CMakeLists.txt
+  if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/bindings/${INCLUDE_BINDINGS_DIR}/CMakeLists.txt)
+    message(FATAL_ERROR "The script library does not contain a CMakeLists.txt!")
+  endif()
+  message(STATUS "Build script library  : Yes (using ${INCLUDE_BINDINGS_DIR})")
+else()
+  message(STATUS "Build script library  : No")
+endif()
 
 # if(CLI)
 #   message(STATUS "Build with CLI        : Yes (default)")
@@ -363,17 +393,24 @@ add_subdirectory(dep) # TODO: add vmap extractor build support
 # Add definitions for all build types
 # Don't place this above 'dep' subdirectory! Because of defines build will crash.
 set(DEFINITIONS
-  DO_MYSQL
   HAVE_CONFIG_H
   VERSION="${MANGOS_VERSION}"
   SYSCONFDIR="${CONF_DIR}/"
 )
+
+if(POSTGRESQL)
+  set(DEFINITIONS ${DEFINITIONS} DO_POSTGRESQL)
+else()
+  set(DEFINITIONS ${DEFINITIONS} DO_MYSQL)
+endif()
+
 set(DEFINITIONS_RELEASE NDEBUG)
 set(DEFINITIONS_DEBUG _DEBUG MANGOS_DEBUG)
 if(WIN32)
   set(DEFINITIONS ${DEFINITIONS} WIN32 _WIN32)
   set(DEFINITIONS_RELEASE ${DEFINITIONS_RELEASE} _CRT_SECURE_NO_WARNINGS)
 endif()
+
 if(USE_STD_MALLOC)
   set(DEFINITIONS ${DEFINITIONS} USE_STANDARD_MALLOC)
 endif()

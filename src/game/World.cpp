@@ -703,7 +703,6 @@ void World::LoadConfigSettings(bool reload)
 
     setConfig(CONFIG_UINT32_WORLD_BOSS_LEVEL_DIFF, "WorldBossLevelDiff", 3);
 
-    // note: disable value (-1) will assigned as 0xFFFFFFF, to prevent overflow at calculations limit it to max possible player level MAX_LEVEL(100)
     setConfigMinMax(CONFIG_INT32_QUEST_LOW_LEVEL_HIDE_DIFF, "Quests.LowLevelHideDiff", 4, -1, MAX_LEVEL);
     setConfigMinMax(CONFIG_INT32_QUEST_HIGH_LEVEL_HIDE_DIFF, "Quests.HighLevelHideDiff", 7, -1, MAX_LEVEL);
 
@@ -741,6 +740,7 @@ void World::LoadConfigSettings(bool reload)
     setConfigMinMax(CONFIG_FLOAT_GHOST_RUN_SPEED_BG,      "Death.Ghost.RunSpeed.Battleground", 1.0f, 0.1f, 10.0f);
 
     setConfig(CONFIG_FLOAT_THREAT_RADIUS, "ThreatRadius", 100.0f);
+    setConfigMin(CONFIG_UINT32_CREATURE_RESPAWN_AGGRO_DELAY, "CreatureRespawnAggroDelay", 5000, 0);
 
     // always use declined names in the russian client
     if (getConfig(CONFIG_UINT32_REALM_ZONE) == REALM_ZONE_RUSSIAN)
@@ -775,6 +775,8 @@ void World::LoadConfigSettings(bool reload)
     setConfig(CONFIG_BOOL_OFFHAND_CHECK_AT_TALENTS_RESET, "OffhandCheckAtTalentsReset", false);
 
     setConfig(CONFIG_BOOL_KICK_PLAYER_ON_BAD_PACKET, "Network.KickOnBadPacket", false);
+
+    setConfig(CONFIG_BOOL_PLAYER_COMMANDS, "PlayerCommands", true);
 
     if (int clientCacheId = sConfig.GetIntDefault("ClientCacheVersion", 0))
     {
@@ -1062,6 +1064,9 @@ void World::SetInitialWorldSettings()
 
     sLog.outString("Loading Equipment templates...");
     sObjectMgr.LoadEquipmentTemplates();
+
+    sLog.outString("Loading Creature Stats...");
+    sObjectMgr.LoadCreatureClassLvlStats();
 
     sLog.outString("Loading Creature templates...");
     sObjectMgr.LoadCreatureTemplates();
@@ -1655,19 +1660,7 @@ namespace MaNGOS
                 while (char* line = lineFromMessage(pos))
                 {
                     WorldPacket* data = new WorldPacket();
-
-                    uint32 lineLength = (line ? strlen(line) : 0) + 1;
-
-                    data->Initialize(SMSG_MESSAGECHAT, 100);// guess size
-                    *data << uint8(CHAT_MSG_SYSTEM);
-                    *data << uint32(LANG_UNIVERSAL);
-                    *data << uint64(0);
-                    *data << uint32(0);                     // can be chat msg group or something
-                    *data << uint64(0);
-                    *data << uint32(lineLength);
-                    *data << line;
-                    *data << uint8(0);
-
+                    ChatHandler::BuildChatPacket(*data, CHAT_MSG_SYSTEM, line);
                     data_list.push_back(data);
                 }
             }
@@ -1965,7 +1958,7 @@ void World::ShutdownCancel()
     DEBUG_LOG("Server %s cancelled.", (m_ShutdownMask & SHUTDOWN_MASK_RESTART ? "restart" : "shutdown"));
 }
 
-void World::UpdateSessions(uint32 diff)
+void World::UpdateSessions(uint32 /*diff*/)
 {
     ///- Add new sessions
     WorldSession* sess;
@@ -2390,4 +2383,11 @@ bool World::configNoReload(bool reload, eConfigBoolValues index, char const* fie
         sLog.outError("%s option can't be changed at mangosd.conf reload, using current value (%s).", fieldname, getConfig(index) ? "'true'" : "'false'");
 
     return false;
+}
+
+void World::InvalidatePlayerDataToAllClient(ObjectGuid guid)
+{
+    WorldPacket data(SMSG_INVALIDATE_PLAYER, 8);
+    data << guid;
+    SendGlobalMessage(&data);
 }

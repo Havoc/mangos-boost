@@ -119,7 +119,7 @@ typedef UNORDERED_MAP < uint32/*(mapid,spawnMode) pair*/, CellObjectGuidsMap > M
 #define MIN_MANGOS_STRING_ID           1                    // 'mangos_string'
 #define MAX_MANGOS_STRING_ID           2000000000
 #define MIN_DB_SCRIPT_STRING_ID        MAX_MANGOS_STRING_ID // 'db_script_string'
-#define MAX_DB_SCRIPT_STRING_ID        2000010000
+#define MAX_DB_SCRIPT_STRING_ID        2001000000
 #define MIN_CREATURE_AI_TEXT_STRING_ID (-1)                 // 'creature_ai_texts'
 #define MAX_CREATURE_AI_TEXT_STRING_ID (-1000000)
 // Anything below MAX_CREATURE_AI_TEXT_STRING_ID is handled by the external script lib
@@ -128,12 +128,12 @@ static_assert(MAX_DB_SCRIPT_STRING_ID < ACE_INT32_MAX, "Must scope with int32 ra
 
 struct MangosStringLocale
 {
-    MangosStringLocale() : SoundId(0), Type(0), Language(0), Emote(0) { }
+    MangosStringLocale() : SoundId(0), Type(0), LanguageId(LANG_UNIVERSAL), Emote(0) { }
 
     std::vector<std::string> Content;                       // 0 -> default, i -> i-1 locale index
     uint32 SoundId;
     uint8  Type;
-    uint32 Language;
+    Language LanguageId;
     uint32 Emote;
 };
 
@@ -403,6 +403,7 @@ enum ConditionType
     CONDITION_GENDER                = 35,                   // 0=male, 1=female, 2=none (see enum Gender)
     CONDITION_DEAD_OR_AWAY          = 36,                   // value1: 0=player dead, 1=player is dead (with group dead), 2=player in instance are dead, 3=creature is dead
                                                             // value2: if != 0 only consider players in range of this value
+    CONDITION_CREATURE_IN_RANGE     = 37,                   // value1: creature entry; value2: range; returns only alive creatures
 };
 
 enum ConditionSource                                        // From where was the condition called?
@@ -693,6 +694,7 @@ class ObjectMgr
         void LoadCreatureTemplates();
         void LoadCreatures();
         void LoadCreatureAddons();
+        void LoadCreatureClassLvlStats();
         void LoadCreatureModelInfo();
         void LoadCreatureModelRace();
         void LoadEquipmentTemplates();
@@ -1113,6 +1115,19 @@ class ObjectMgr
         QuestRelationsMap& GetCreatureQuestRelationsMap() { return m_CreatureQuestRelations; }
 
         uint32 GetModelForRace(uint32 sourceModelId, uint32 racemask);
+        /**
+        * \brief: Data returned is used to compute health, mana, armor, damage of creatures. May be NULL.
+        * \param uint32 level               creature level
+        * \param uint32 unitClass           creature class, related to CLASSMASK_ALL_CREATURES
+        * \param uint32 expansion           creature expansion (we could have creature exp = 0 for wotlk as well as exp = 1 or exp = 2)
+        * \return: CreatureClassLvlStats const* or NULL
+        *
+        * Description: GetCreatureClassLvlStats give fast access to creature stats data.
+        * FullName: ObjectMgr::GetCreatureClassLvlStats
+        * Access: public
+        * Qualifier: const
+        **/
+        CreatureClassLvlStats const* GetCreatureClassLvlStats(uint32 level, uint32 unitClass, int32 expansion) const;
     protected:
 
         // first free id for selected id type
@@ -1228,6 +1243,9 @@ class ObjectMgr
         typedef std::map<uint32, std::vector<std::string> > HalfNameMap;
         HalfNameMap PetHalfName0;
         HalfNameMap PetHalfName1;
+
+        // Array to store creature stats, Max creature level + 1 (for data alignement with in game level)
+        CreatureClassLvlStats m_creatureClassLvlStats[DEFAULT_MAX_CREATURE_LEVEL + 1][MAX_CREATURE_CLASS][MAX_EXPANSION + 1];
 
         MapObjectGuids mMapObjectGuids;
         CreatureDataMap mCreatureDataMap;

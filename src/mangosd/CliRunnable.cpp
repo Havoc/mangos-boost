@@ -34,7 +34,7 @@
 #include "Player.h"
 #include "Chat.h"
 
-void utf8print(void* arg, const char* str)
+void utf8print(void* /*arg*/, const char* str)
 {
 #if PLATFORM == PLATFORM_WINDOWS
     wchar_t wtemp_buf[6000];
@@ -50,7 +50,7 @@ void utf8print(void* arg, const char* str)
 #endif
 }
 
-void commandFinished(void*, bool sucess)
+void commandFinished(void*, bool /*sucess*/)
 {
     printf("mangos>");
     fflush(stdout);
@@ -480,7 +480,12 @@ bool ChatHandler::HandleAccountCreateCommand(char* args)
     std::string account_name = szAcc;
     std::string password = szPassword;
 
-    AccountOpResult result = sAccountMgr.CreateAccount(account_name, password);
+    AccountOpResult result;
+    uint32 expansion = 0;
+    if(ExtractUInt32(&args, expansion))
+        result = sAccountMgr.CreateAccount(account_name, password, expansion);
+    else
+        result = sAccountMgr.CreateAccount(account_name, password);
     switch (result)
     {
         case AOR_OK:

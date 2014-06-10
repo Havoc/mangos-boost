@@ -172,19 +172,19 @@ void BattleGroundEY::HandleGameObjectCreate(GameObject* go)
     {
         case GO_CAPTURE_POINT_BLOOD_ELF_TOWER:
             m_towers[NODE_BLOOD_ELF_TOWER] = go->GetObjectGuid();
-            go->SetCapturePointSlider(CAPTURE_SLIDER_MIDDLE);
+            go->SetCapturePointSlider(CAPTURE_SLIDER_MIDDLE, false);
             break;
         case GO_CAPTURE_POINT_FEL_REAVER_RUINS:
             m_towers[NODE_FEL_REAVER_RUINS] = go->GetObjectGuid();
-            go->SetCapturePointSlider(CAPTURE_SLIDER_MIDDLE);
+            go->SetCapturePointSlider(CAPTURE_SLIDER_MIDDLE, false);
             break;
         case GO_CAPTURE_POINT_MAGE_TOWER:
             m_towers[NODE_MAGE_TOWER] = go->GetObjectGuid();
-            go->SetCapturePointSlider(CAPTURE_SLIDER_MIDDLE);
+            go->SetCapturePointSlider(CAPTURE_SLIDER_MIDDLE, false);
             break;
         case GO_CAPTURE_POINT_DRAENEI_RUINS:
             m_towers[NODE_DRAENEI_RUINS] = go->GetObjectGuid();
-            go->SetCapturePointSlider(CAPTURE_SLIDER_MIDDLE);
+            go->SetCapturePointSlider(CAPTURE_SLIDER_MIDDLE, false);
             break;
     }
 }
@@ -214,7 +214,7 @@ bool BattleGroundEY::HandleEvent(uint32 eventId, GameObject* go)
     return false;
 }
 
-void BattleGroundEY::ProcessCaptureEvent(GameObject* go, uint32 towerId, Team team, uint32 newWorldState, uint32 message)
+void BattleGroundEY::ProcessCaptureEvent(GameObject* /*go*/, uint32 towerId, Team team, uint32 newWorldState, uint32 message)
 {
     if (team == ALLIANCE)
     {

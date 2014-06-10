@@ -2096,8 +2096,8 @@ bool ChatHandler::HandleNpcFactionIdCommand(char* args)
     // update in memory
     if (CreatureInfo const* cinfo = pCreature->GetCreatureInfo())
     {
-        const_cast<CreatureInfo*>(cinfo)->faction_A = factionId;
-        const_cast<CreatureInfo*>(cinfo)->faction_H = factionId;
+        const_cast<CreatureInfo*>(cinfo)->FactionAlliance = factionId;
+        const_cast<CreatureInfo*>(cinfo)->FactionHorde = factionId;
     }
 
     // and DB
@@ -3921,19 +3921,18 @@ bool ChatHandler::HandleWpImportCommand(char* args)
     if (!arg_str)
         return false;
 
+    std::ifstream stream(arg_str);
+    if (!stream.is_open())
+        return false;
+
     std::string line;
-    std::ifstream infile(arg_str);
-    if (infile.is_open())
+    while (getline(stream, line))
     {
-        while (! infile.eof())
-        {
-            getline(infile, line);
-            // cout << line << endl;
-            QueryResult* result = WorldDatabase.Query(line.c_str());
-            delete result;
-        }
-        infile.close();
+        QueryResult* result = WorldDatabase.Query(line.c_str());
+        delete result;
     }
+    stream.close();
+
     PSendSysMessage(LANG_WAYPOINT_IMPORTED);
 
     return true;
@@ -5358,14 +5357,8 @@ bool ChatHandler::HandleMmapPathCommand(char* args)
     if (!player->isGameMaster())
         PSendSysMessage("Enable GM mode to see the path points.");
 
-    // this entry visible only to GM's with "gm on"
-    static const uint32 WAYPOINT_NPC_ENTRY = 1;
-    Creature* wp = NULL;
     for (uint32 i = 0; i < pointPath.size(); ++i)
-    {
-        wp = player->SummonCreature(WAYPOINT_NPC_ENTRY, pointPath[i].x, pointPath[i].y, pointPath[i].z, 0, TEMPSUMMON_TIMED_DESPAWN, 9000);
-        // TODO: make creature not sink/fall
-    }
+        player->SummonCreature(VISUAL_WAYPOINT, pointPath[i].x, pointPath[i].y, pointPath[i].z, 0, TEMPSUMMON_TIMED_DESPAWN, 9000);
 
     return true;
 }
