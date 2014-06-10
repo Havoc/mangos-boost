@@ -435,7 +435,7 @@
     <ProjectReference Include="shared.vcxproj">
       <Project>{90297c34-f231-4df4-848e-a74bcc0e40ed}</Project>
     </ProjectReference>
-    <ProjectReference Include="..\..\dep\backtrace\win\VC110\backtrace.vcxproj">
+    <ProjectReference Include="..\..\dep\backtrace\win\VC120\backtrace.vcxproj">
       <Project>{72bdf975-4d4a-42c7-b2c4-f9ed90a2abb6}</Project>
     </ProjectReference>
   </ItemGroup>
