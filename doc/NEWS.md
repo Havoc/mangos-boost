@@ -10,7 +10,7 @@ http://cmangos.net
 Please submit bug reports at our bugtracker at:
 https://github.com/cmangos/issues
 
-See the file ChangeLog.md for details!
+See the file [CHANGELOG](CHANGELOG.md) for details!
 
 ## Version 0.17
  * Move to CMaNGOS (http://cmangos.net - https://github.com/cmangos)
