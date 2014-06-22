@@ -20,8 +20,8 @@
 #define MANGOS_PATH_FINDER_H
 
 #include "MoveMapSharedDefines.h"
-#include "../recastnavigation/Detour/Include/DetourNavMesh.h"
-#include "../recastnavigation/Detour/Include/DetourNavMeshQuery.h"
+#include "detour/DetourNavMesh.h"
+#include "detour/DetourNavMeshQuery.h"
 
 #include "movement/MoveSplineInitArgs.h"
 

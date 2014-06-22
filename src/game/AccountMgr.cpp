@@ -17,13 +17,13 @@
  */
 
 #include "AccountMgr.h"
-#include "Database/DatabaseEnv.h"
+#include "DatabaseEnv.h"
 #include "ObjectAccessor.h"
 #include "ObjectGuid.h"
 #include "Player.h"
-#include "Policies/Singleton.h"
+#include "Singleton.h"
 #include "Util.h"
-#include "Auth/Sha1.h"
+#include "Sha1.h"
 
 extern DatabaseType LoginDatabase;
 

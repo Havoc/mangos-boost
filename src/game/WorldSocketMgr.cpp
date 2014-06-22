@@ -20,7 +20,7 @@
 #include <boost/system/error_code.hpp>
 #include "Log.h"
 #include "Common.h"
-#include "Config/Config.h"
+#include "Config.h"
 #include "WorldSocket.h"
 
 #define CLASS_LOCK MaNGOS::ClassLevelLockable<WorldSocketMgr, boost::recursive_mutex>

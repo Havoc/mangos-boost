@@ -46,7 +46,7 @@
 #include "SkillDiscovery.h"
 #include "SkillExtraItems.h"
 #include "SystemConfig.h"
-#include "Config/Config.h"
+#include "Config.h"
 #include "Mail.h"
 #include "Util.h"
 #include "ItemEnchantmentMgr.h"

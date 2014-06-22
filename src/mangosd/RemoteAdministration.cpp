@@ -18,10 +18,10 @@
 
 #include "RemoteAdministration.h"
 #include "Common.h"
-#include "Database/DatabaseEnv.h"
+#include "DatabaseEnv.h"
 #include "Log.h"
 #include "World.h"
-#include "Config/Config.h"
+#include "Config.h"
 #include "Util.h"
 #include "AccountMgr.h"
 #include "Language.h"

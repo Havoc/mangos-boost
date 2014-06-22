@@ -22,10 +22,10 @@
 #include <string>
 #include <boost/filesystem/fstream.hpp>
 #include "Common.h"
-#include "Auth/BigNumber.h"
-#include "Auth/Sha1.h"
+#include "BigNumber.h"
+#include "Sha1.h"
 #include "ByteBuffer.h"
-#include "Network/Socket.h"
+#include "Socket.h"
 
 class NetworkManager;
 class NetworkThread;

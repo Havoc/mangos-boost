@@ -18,7 +18,7 @@
 
 #include "Socket.h"
 #include <boost/bind.hpp>
-#include "Auth/Sha1.h"
+#include "Sha1.h"
 #include "Common.h"
 #include "NetworkThread.h"
 #include "NetworkManager.h"

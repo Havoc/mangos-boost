@@ -22,7 +22,7 @@
 #include "AuthCodes.h"
 #include "AuthSocket.h"
 #include "Common.h"
-#include "Config/Config.h"
+#include "Config.h"
 #include "Database/DatabaseEnv.h"
 #include "Log.h"
 #include "PatchHandler.h"

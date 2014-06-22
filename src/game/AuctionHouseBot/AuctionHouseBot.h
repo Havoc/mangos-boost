@@ -20,7 +20,7 @@
 #define AUCTION_HOUSE_BOT_H
 
 #include "World.h"
-#include "Config/Config.h"
+#include "Config.h"
 #include "AuctionHouseMgr.h"
 #include "SharedDefines.h"
 #include "Item.h"

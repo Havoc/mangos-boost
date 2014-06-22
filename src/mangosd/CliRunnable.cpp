@@ -26,7 +26,7 @@
 #include "World.h"
 #include "ObjectMgr.h"
 #include "WorldSession.h"
-#include "Config/Config.h"
+#include "Config.h"
 #include "Util.h"
 #include "AccountMgr.h"
 #include "CliRunnable.h"

@@ -20,7 +20,7 @@
 #define MANGOS_GRIDDEFINES_H
 
 #include "Common.h"
-#include "GameSystem/NGrid.h"
+#include "NGrid.h"
 #include <cmath>
 
 // Forward class definitions

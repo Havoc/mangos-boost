@@ -29,11 +29,23 @@ set(LIBRARY_SRCS
    )
 
 include_directories(
-  ${CMAKE_SOURCE_DIR}/src/shared
-  ${CMAKE_SOURCE_DIR}/src/framework
-  ${CMAKE_BINARY_DIR}
   ${ACE_INCLUDE_DIR}
   ${MYSQL_INCLUDE_DIR}
+  ${CMAKE_SOURCE_DIR}/src/framework
+  ${CMAKE_SOURCE_DIR}/src/framework/configuration
+  ${CMAKE_SOURCE_DIR}/src/framework/cryptography
+  ${CMAKE_SOURCE_DIR}/src/framework/database
+  ${CMAKE_SOURCE_DIR}/src/framework/debugging
+  ${CMAKE_SOURCE_DIR}/src/framework/dynamic
+  ${CMAKE_SOURCE_DIR}/src/framework/game_system
+  ${CMAKE_SOURCE_DIR}/src/framework/log
+  ${CMAKE_SOURCE_DIR}/src/framework/network
+  ${CMAKE_SOURCE_DIR}/src/framework/platform
+  ${CMAKE_SOURCE_DIR}/src/framework/policies
+  ${CMAKE_SOURCE_DIR}/src/framework/system
+  ${CMAKE_SOURCE_DIR}/src/framework/threading
+  ${CMAKE_SOURCE_DIR}/src/framework/utilities
+  ${CMAKE_BINARY_DIR}
 )
 
 add_library(${LIBRARY_NAME} SHARED
@@ -41,8 +53,8 @@ add_library(${LIBRARY_NAME} SHARED
 )
 
 add_dependencies(${LIBRARY_NAME} revision.h)
-if(NOT ACE_USE_EXTERNAL)
-  add_dependencies(${LIBRARY_NAME} ACE_Project)
+if(WIN32)
+  add_dependencies(${LIBRARY_NAME} ace)
 endif()
 
 target_link_libraries(${LIBRARY_NAME}

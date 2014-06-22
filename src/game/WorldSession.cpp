@@ -22,7 +22,7 @@
 
 #include "WorldSocket.h"                                    // must be first to make ACE happy with ACE includes in it
 #include "Common.h"
-#include "Database/DatabaseEnv.h"
+#include "DatabaseEnv.h"
 #include "Log.h"
 #include "Opcodes.h"
 #include "WorldPacket.h"
@@ -36,8 +36,8 @@
 #include "BattleGround/BattleGroundMgr.h"
 #include "MapManager.h"
 #include "SocialMgr.h"
-#include "Auth/AuthCrypt.h"
-#include "Auth/HMACSHA1.h"
+#include "AuthCrypt.h"
+#include "HMACSHA1.h"
 #include "zlib/zlib.h"
 
 // select opcodes appropriate for processing in Map::Update context for current session state

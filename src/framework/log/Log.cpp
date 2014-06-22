@@ -18,8 +18,8 @@
 
 #include "Common.h"
 #include "Log.h"
-#include "Policies/Singleton.h"
-#include "Config/Config.h"
+#include "Singleton.h"
+#include "Config.h"
 #include "Util.h"
 #include "ByteBuffer.h"
 #include "ProgressBar.h"

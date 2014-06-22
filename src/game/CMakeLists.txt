@@ -19,21 +19,33 @@
 set(LIBRARY_NAME game)
 
 include_directories(
+  ${ACE_INCLUDE_DIR}
+  ${MYSQL_INCLUDE_DIR}
+  ${OPENSSL_INCLUDE_DIR}
+  ${CMAKE_SOURCE_DIR}/dep/backtrace
+  ${CMAKE_SOURCE_DIR}/dep/include/g3dlite
+  ${CMAKE_SOURCE_DIR}/dep/recastnavigation/
+  ${CMAKE_SOURCE_DIR}/dep/include
+  ${CMAKE_SOURCE_DIR}/src/framework
+  ${CMAKE_SOURCE_DIR}/src/framework/configuration
+  ${CMAKE_SOURCE_DIR}/src/framework/cryptography
+  ${CMAKE_SOURCE_DIR}/src/framework/database
+  ${CMAKE_SOURCE_DIR}/src/framework/debugging
+  ${CMAKE_SOURCE_DIR}/src/framework/dynamic
+  ${CMAKE_SOURCE_DIR}/src/framework/game_system
+  ${CMAKE_SOURCE_DIR}/src/framework/log
+  ${CMAKE_SOURCE_DIR}/src/framework/network
+  ${CMAKE_SOURCE_DIR}/src/framework/platform
+  ${CMAKE_SOURCE_DIR}/src/framework/policies
+  ${CMAKE_SOURCE_DIR}/src/framework/system
+  ${CMAKE_SOURCE_DIR}/src/framework/threading
+  ${CMAKE_SOURCE_DIR}/src/framework/utilities
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/vmap
   ${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouseBot
   ${CMAKE_CURRENT_SOURCE_DIR}/BattleGround
   ${CMAKE_CURRENT_SOURCE_DIR}/OutdoorPvP
-  ${CMAKE_SOURCE_DIR}/dep/include/g3dlite
-  ${CMAKE_SOURCE_DIR}/dep/recastnavigation/Detour
-  ${CMAKE_SOURCE_DIR}/dep/recastnavigation/
-  ${CMAKE_SOURCE_DIR}/dep/include
-  ${CMAKE_SOURCE_DIR}/src/shared
-  ${CMAKE_SOURCE_DIR}/src/framework
   ${CMAKE_BINARY_DIR}
-  ${CMAKE_BINARY_DIR}/src/shared
-  ${MYSQL_INCLUDE_DIR}
-  ${ACE_INCLUDE_DIR}
 )
 
 set(SRC_GRP_AHBOT
@@ -497,7 +509,6 @@ add_library(${LIBRARY_NAME} STATIC
 )
 
 target_link_libraries(${LIBRARY_NAME}
-  shared
   detour
 )
 

@@ -23,9 +23,11 @@
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/lock_guard.hpp>
 #include "Common.h"
-#include "Auth/AuthCrypt.h"
-#include "Auth/BigNumber.h"
-#include "Network/Socket.h"
+#include "AuthCrypt.h"
+#include "BigNumber.h"
+#include "Socket.h"
+#include "ByteConverter.h"
+#include "Log.h"
 
 #if !defined (ACE_LACKS_PRAGMA_ONCE)
 #pragma once

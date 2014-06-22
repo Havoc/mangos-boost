@@ -39,15 +39,26 @@ if(WIN32)
 endif()
 
 include_directories(
-  ${CMAKE_SOURCE_DIR}/src/shared
+  ${ACE_INCLUDE_DIR}
+  ${OPENSSL_INCLUDE_DIR}
   ${CMAKE_SOURCE_DIR}/dep/backtrace
   ${CMAKE_SOURCE_DIR}/dep/include/gsoap
   ${CMAKE_SOURCE_DIR}/src/framework
+  ${CMAKE_SOURCE_DIR}/src/framework/configuration
+  ${CMAKE_SOURCE_DIR}/src/framework/cryptography
+  ${CMAKE_SOURCE_DIR}/src/framework/database
+  ${CMAKE_SOURCE_DIR}/src/framework/debugging
+  ${CMAKE_SOURCE_DIR}/src/framework/dynamic
+  ${CMAKE_SOURCE_DIR}/src/framework/game_system
+  ${CMAKE_SOURCE_DIR}/src/framework/log
+  ${CMAKE_SOURCE_DIR}/src/framework/network
+  ${CMAKE_SOURCE_DIR}/src/framework/platform
+  ${CMAKE_SOURCE_DIR}/src/framework/policies
+  ${CMAKE_SOURCE_DIR}/src/framework/system
+  ${CMAKE_SOURCE_DIR}/src/framework/threading
+  ${CMAKE_SOURCE_DIR}/src/framework/utilities
   ${CMAKE_SOURCE_DIR}/src/game
   ${CMAKE_BINARY_DIR}
-  ${CMAKE_BINARY_DIR}/src/shared
-  ${ACE_INCLUDE_DIR}
-  ${OPENSSL_INCLUDE_DIR}
 )
 
 if(POSTGRESQL)
@@ -68,7 +79,6 @@ endif()
 
 target_link_libraries(${EXECUTABLE_NAME}
   game
-  shared
   framework
   g3dlite
   gsoap

@@ -39,6 +39,8 @@
 #include <windows.h>
 #include <stdlib.h>
 #include <dbghelp.h>
+// CMaNGOS hack
+#pragma comment(lib, "dbghelp.lib")
 #endif
 
 

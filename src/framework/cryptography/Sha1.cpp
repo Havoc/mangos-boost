@@ -16,45 +16,51 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "Auth/HMACSHA1.h"
+#include "Sha1.h"
 #include "BigNumber.h"
+#include <stdarg.h>
 
-HMACSHA1::HMACSHA1(uint32 len, uint8* seed)
+Sha1Hash::Sha1Hash()
 {
-    HMAC_CTX_init(&m_ctx);
-    HMAC_Init_ex(&m_ctx, seed, len, EVP_sha1(), NULL);
+    SHA1_Init(&mC);
 }
 
-HMACSHA1::~HMACSHA1()
+Sha1Hash::~Sha1Hash()
 {
-    HMAC_CTX_cleanup(&m_ctx);
+    SHA1_Init(&mC);
 }
 
-void HMACSHA1::UpdateBigNumber(BigNumber* bn)
+void Sha1Hash::UpdateData(const uint8* dta, int len)
 {
-    UpdateData(bn->AsByteArray(), bn->GetNumBytes());
+    SHA1_Update(&mC, dta, len);
 }
 
-void HMACSHA1::UpdateData(const uint8* data, int length)
-{
-    HMAC_Update(&m_ctx, data, length);
-}
-
-void HMACSHA1::UpdateData(const std::string& str)
+void Sha1Hash::UpdateData(const std::string& str)
 {
     UpdateData((uint8 const*)str.c_str(), str.length());
 }
 
-void HMACSHA1::Finalize()
+void Sha1Hash::UpdateBigNumbers(BigNumber* bn0, ...)
 {
-    uint32 length = 0;
-    HMAC_Final(&m_ctx, (uint8*)m_digest, &length);
-    MANGOS_ASSERT(length == SHA_DIGEST_LENGTH);
+    va_list v;
+    BigNumber* bn;
+
+    va_start(v, bn0);
+    bn = bn0;
+    while (bn)
+    {
+        UpdateData(bn->AsByteArray(), bn->GetNumBytes());
+        bn = va_arg(v, BigNumber*);
+    }
+    va_end(v);
 }
 
-uint8* HMACSHA1::ComputeHash(BigNumber* bn)
+void Sha1Hash::Initialize()
 {
-    HMAC_Update(&m_ctx, bn->AsByteArray(), bn->GetNumBytes());
-    Finalize();
-    return (uint8*)m_digest;
+    SHA1_Init(&mC);
+}
+
+void Sha1Hash::Finalize(void)
+{
+    SHA1_Final(mDigest, &mC);
 }

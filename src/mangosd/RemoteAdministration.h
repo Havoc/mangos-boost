@@ -29,7 +29,7 @@
 #include <ace/TP_Reactor.h>
 #include <ace/Dev_Poll_Reactor.h>
 #include "Common.h"
-#include "Config/Config.h"
+#include "Config.h"
 #include "Threading.h"
 #include "Log.h"
 #include "World.h"

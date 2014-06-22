@@ -27,10 +27,10 @@
 #include <cassert>
 #include <map>
 #include <vector>
-#include "Platform/Define.h"
-#include "Utilities/TypeList.h"
-#include "Utilities/UnorderedMapSet.h"
-#include "GameSystem/GridRefManager.h"
+#include "Define.h"
+#include "TypeList.h"
+#include "UnorderedMapSet.h"
+#include "GridRefManager.h"
 
 template<class OBJECT, class KEY_TYPE>
 struct ContainerUnorderedMap

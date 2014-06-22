@@ -19,8 +19,8 @@
 #ifndef DO_POSTGRESQL
 
 #include "Util.h"
-#include "Policies/Singleton.h"
-#include "Platform/Define.h"
+#include "Singleton.h"
+#include "Define.h"
 #include "Threading.h"
 #include "DatabaseEnv.h"
 #include "Timer.h"

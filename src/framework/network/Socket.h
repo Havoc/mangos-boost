@@ -30,8 +30,8 @@
 #endif
 
 #include "Common.h"
-#include "Auth/AuthCrypt.h"
-#include "Auth/BigNumber.h"
+#include "AuthCrypt.h"
+#include "BigNumber.h"
 
 class NetworkThread;
 class NetworkManager;

@@ -25,8 +25,8 @@
 #include <openssl/crypto.h>
 #include "AuthSocket.h"
 #include "Common.h"
-#include "Config/Config.h"
-#include "Database/DatabaseEnv.h"
+#include "Config.h"
+#include "DatabaseEnv.h"
 #include "Log.h"
 #include "RealmList.h"
 #include "revision.h"

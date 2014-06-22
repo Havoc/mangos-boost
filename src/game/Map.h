@@ -20,8 +20,8 @@
 #define MANGOS_MAP_H
 
 #include "Common.h"
-#include "Platform/Define.h"
-#include "Policies/ThreadingModel.h"
+#include "Define.h"
+#include "ThreadingModel.h"
 
 #include "DBCStructure.h"
 #include "GridDefines.h"
@@ -30,9 +30,9 @@
 #include "Timer.h"
 #include "SharedDefines.h"
 #include "GridMap.h"
-#include "GameSystem/GridRefManager.h"
+#include "GridRefManager.h"
 #include "MapRefManager.h"
-#include "Utilities/TypeList.h"
+#include "TypeList.h"
 #include "ScriptMgr.h"
 #include "CreatureLinkingMgr.h"
 #include "vmap/DynamicTree.h"

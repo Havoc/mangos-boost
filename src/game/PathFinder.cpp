@@ -22,7 +22,7 @@
 #include "PathFinder.h"
 #include "Log.h"
 
-#include "../recastnavigation/Detour/Include/DetourCommon.h"
+#include "detour/DetourCommon.h"
 
 ////////////////// PathFinder //////////////////
 PathFinder::PathFinder(const Unit* owner) :
