@@ -511,8 +511,9 @@ if(UNIX)
 endif()
 
 add_dependencies(${LIBRARY_NAME} revision.h)
-if(NOT ACE_USE_EXTERNAL)
-  add_dependencies(${LIBRARY_NAME} ACE_Project)
+
+if(WIN32)
+  add_dependencies(${LIBRARY_NAME} ace)
 endif()
 
 # Generate precompiled header
@@ -524,8 +525,5 @@ if(PCH)
     add_native_precompiled_header(${LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.h)
   elseif(CMAKE_COMPILER_IS_GNUCXX)
     add_precompiled_header(${LIBRARY_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/pchdef.h)
-    if(NOT ACE_USE_EXTERNAL)
-      add_dependencies(game_pch_dephelp ACE_Project)
-    endif()
   endif()
 endif()

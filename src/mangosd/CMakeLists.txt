@@ -40,6 +40,7 @@ endif()
 
 include_directories(
   ${CMAKE_SOURCE_DIR}/src/shared
+  ${CMAKE_SOURCE_DIR}/dep/backtrace
   ${CMAKE_SOURCE_DIR}/dep/include/gsoap
   ${CMAKE_SOURCE_DIR}/src/framework
   ${CMAKE_SOURCE_DIR}/src/game
@@ -60,9 +61,9 @@ add_executable(${EXECUTABLE_NAME}
 )
 
 add_dependencies(${EXECUTABLE_NAME} revision.h)
-if(NOT ACE_USE_EXTERNAL)
-  add_dependencies(${EXECUTABLE_NAME} ACE_Project)
-# add_dependencies(${EXECUTABLE_NAME} ace)
+
+if(WIN32)
+  add_dependencies(${EXECUTABLE_NAME} ace)
 endif()
 
 target_link_libraries(${EXECUTABLE_NAME}
@@ -72,6 +73,7 @@ target_link_libraries(${EXECUTABLE_NAME}
   g3dlite
   gsoap
   backtrace
+  ${OPENSSL_LIBRARIES}
   ${Boost_LIBRARIES}
   ${ACE_LIBRARIES}
 )
@@ -80,9 +82,7 @@ if(WIN32)
   target_link_libraries(${EXECUTABLE_NAME}
     zlib
     optimized ${MYSQL_LIBRARY}
-    optimized ${OPENSSL_LIBRARIES}
     debug ${MYSQL_DEBUG_LIBRARY}
-    debug ${OPENSSL_DEBUG_LIBRARIES}
   )
   if(PLATFORM MATCHES X86)
     target_link_libraries(${EXECUTABLE_NAME})
@@ -92,8 +92,6 @@ endif()
 if(UNIX)
   target_link_libraries(${EXECUTABLE_NAME}
     ${MYSQL_LIBRARY}
-    ${OPENSSL_LIBRARIES}
-    ${OPENSSL_EXTRA_LIBRARIES}
     ${ZLIB_LIBRARIES}
   )
 endif()

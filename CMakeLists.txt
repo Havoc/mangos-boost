@@ -18,7 +18,7 @@
 
 cmake_minimum_required(VERSION 2.8)
 
-project(MaNGOS)
+project(CMaNGOS)
 set(MANGOS_VERSION 0.18)
 
 set(CMAKE_MODULE_PATH
@@ -28,9 +28,7 @@ set(CMAKE_MODULE_PATH
 
 # define all options here
 option(DEBUG                "Debug mode"                            OFF)
-option(TBB_USE_EXTERNAL     "Use external TBB"                      OFF)
 option(USE_STD_MALLOC       "Use standard malloc instead of TBB"    OFF)
-option(ACE_USE_EXTERNAL     "Use external ACE"                      OFF)
 option(POSTGRESQL           "Use PostgreSQL"                        OFF)
 
 if(PCHSupport_FOUND AND WIN32) # TODO: why only enable it on windows by default?
@@ -56,9 +54,7 @@ message(
                             defined name. the name must corespond to the name of
                             the folder and the folder must contain a valid
                             CMakeLists.txt
-    TBB_USE_EXTERNAL        Use external TBB
     USE_STD_MALLOC          Use standard malloc instead of TBB
-    ACE_USE_EXTERNAL        Use external ACE
   To set an option simply type -D<OPTION>=<VALUE> after 'cmake <srcs>'.
   Also, you can specify the generator with -G. see 'cmake --help' for more details
   For example: cmake .. -DDEBUG=1 -DCMAKE_INSTALL_PREFIX=/opt/mangos"
@@ -104,17 +100,14 @@ if(WIN32)
   endif()
 endif()
 
-# find Git: used to get the revision number
+# Find Git for getting the revision number
 find_package(Git)
 
-# check if the platform supports precomiled headers
+# Check if the platform supports precomiled headers
 find_package(PCHSupport)
 
-# TODO: remove this (refactor ACE & TBB CMake code)
-# VS100 uses MSBuild.exe instead of devenv.com, so force it to use devenv.com
-if(WIN32 AND MSVC_VERSION MATCHES 1600)
-  find_package(VisualStudio2010)
-endif()
+# Find OpenSSL libraries
+find_package(OpenSSL REQUIRED)
 
 # Override configuration-types - we don't use anything else than debug and release
 if(CMAKE_CONFIGURATION_TYPES)
@@ -140,39 +133,30 @@ set(CMAKE_INSTALL_NAME_DIR ${LIBS_DIR})
 set(CMAKE_BUILD_WITH_INSTALL_RPATH OFF)
 
 # Find needed packages and if necessery abort if something important is missing
-unset(ACE_INCLUDE_DIR CACHE)
-unset(ACE_LIBRARIES CACHE)
-unset(ACE_LIBRARIES_DIR CACHE)
-unset(ACE_INCLUDE_DIR)
-unset(ACE_LIBRARIES)
-unset(ACE_LIBRARIES_DIR)
-if(ACE_USE_EXTERNAL)
+if(UNIX)
   find_package(ACE)
   if(NOT ACE_FOUND)
     message(FATAL_ERROR
-      "This project requires ACE installed when ACE_USE_EXTERNAL is set. Please download the ACE Micro Release Kit from http://download.dre.vanderbilt.edu/ and install it. If this script didn't find ACE and it was correctly installed please set ACE_ROOT to the correct path."
+      "This project requires ACE installed. Please download the ACE Micro Release Kit from http://download.dre.vanderbilt.edu/ and install it. If this script didn't find ACE and it was correctly installed please set ACE_ROOT to the correct path."
     )
   endif()
 else()
-  include(cmake/ImportACE.cmake)
+  set(ACE_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/dep/ace-6.2.6)
+  set(ACE_LIBRARIES "ace")
 endif()
 
 if(NOT USE_STD_MALLOC)
-  unset(TBB_INCLUDE_DIR CACHE)
-  unset(TBB_LIBRARIES CACHE)
-  unset(TBB_LIBRARIES_DIR CACHE)
-  unset(TBB_INCLUDE_DIR)
-  unset(TBB_LIBRARIES)
-  unset(TBB_LIBRARIES_DIR)
-  if(TBB_USE_EXTERNAL)
+  if(UNIX)
     find_package(TBB)
     if(NOT TBB_FOUND)
       message(FATAL_ERROR
-        "This project requires TBB installed when TBB_USE_EXTERNAL is set. Please download the TBB Stable Release from http://www.threadingbuildingblocks.org/ and install it. If this script didn't find TBB and it was correctly installed please set TBB_ROOT to the correct path."
+        "This project requires TBB installed. Please download the TBB Stable Release from http://www.threadingbuildingblocks.org/ and install it. If this script didn't find TBB and it was correctly installed please set TBB_ROOT to the correct path."
       )
     endif()
   else()
-    include(cmake/ImportTBB.cmake)
+    set(TBB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/dep/tbb-4.2u5/include)
+    # FIXME
+    set(TBB_LIBRARIES ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_release/tbb.lib)
   endif()
 endif()
 
@@ -181,26 +165,18 @@ if(WIN32)
   set(MYSQL_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/dep/include/mysql)
   set(MYSQL_LIBRARY ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_release/libmySQL.lib)
   set(MYSQL_DEBUG_LIBRARY ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_debug/libmySQL.lib)
-  set(OPENSSL_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/dep/include/openssl)
-  set(OPENSSL_LIBRARIES ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_release/libeay32.lib)
-  set(OPENSSL_DEBUG_LIBRARIES ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_debug/libeay32.lib)
-  # zlib is build
 endif()
 
 # *nix-specific packages
 if(UNIX)
   if(POSTGRESQL)
     find_package(PostgreSQL REQUIRED)
-
     if(POSTGRESQL_FOUND)
       include_directories(${POSTGRESQL_INCLUDE_DIRS})
     endif(POSTGRESQL_FOUND)
-
   else()
     find_package(MySQL REQUIRED)
   endif()
-
-  find_package(OpenSSL REQUIRED)
   find_package(ZLIB REQUIRED)
 endif()
 
@@ -349,14 +325,14 @@ add_custom_target("revision.h" ALL
 if(WIN32)
   install(
     FILES
-      ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_release/libeay32.dll
+      # ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_release/libeay32.dll
       ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_release/libmySQL.dll
     DESTINATION ${LIBS_DIR}
     CONFIGURATIONS Release
   )
   install(
     FILES
-      ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_debug/libeay32.dll
+      # ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_debug/libeay32.dll
       ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_debug/libmySQL.dll
     DESTINATION ${LIBS_DIR}
     CONFIGURATIONS Debug
@@ -420,6 +396,3 @@ set_directory_properties(PROPERTIES COMPILE_DEFINITIONS_RELEASE "${DEFINITIONS_R
 set_directory_properties(PROPERTIES COMPILE_DEFINITIONS_DEBUG "${DEFINITIONS_DEBUG}")
 
 add_subdirectory(src)
-# if(SQL)
-#   add_subdirectory(sql)
-# endif()

@@ -106,6 +106,7 @@ set(LIBRARY_SRCS
     ${SRC_GRP_CONFIG}
     ${SRC_GRP_DATABASE}
     ${SRC_GRP_DATABASE_DBC}
+    ${SRC_GRP_NETWORK}
     ${SRC_GRP_LOG}
     ${SRC_GRP_UTIL}
     Common.cpp
@@ -173,8 +174,10 @@ endif()
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_SOURCE_DIR}/dep/include
+  ${CMAKE_SOURCE_DIR}/dep/backtrace
   ${CMAKE_SOURCE_DIR}/src/framework
   ${CMAKE_BINARY_DIR}
+  ${OPENSSL_INCLUDE_DIR}
   ${ACE_INCLUDE_DIR}
 )
 
@@ -195,6 +198,7 @@ if(POSTGRESQL)
 endif()
 
 add_dependencies(${LIBRARY_NAME} revision.h)
-if(NOT ACE_USE_EXTERNAL)
-  add_dependencies(${LIBRARY_NAME} ACE_Project)
+
+if(WIN32)
+  add_dependencies(${LIBRARY_NAME} ace)
 endif()

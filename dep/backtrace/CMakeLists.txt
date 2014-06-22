@@ -16,7 +16,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 set(backtrace_SRCS
-    libs\backtrace\src\backtrace.cpp
+    boost/backtrace.cpp
+    boost/backtrace.hpp
 )
 
 include_directories(

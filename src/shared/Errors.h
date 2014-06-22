@@ -19,9 +19,8 @@
 #ifndef MANGOSSERVER_ERRORS_H
 #define MANGOSSERVER_ERRORS_H
 
+#include <boost/backtrace.hpp>
 #include "Common.h"
-
-#include "../backtrace/boost/backtrace.hpp"
 
 // Normal assert.
 #define WPError(CONDITION) \

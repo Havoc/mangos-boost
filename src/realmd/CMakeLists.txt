@@ -27,6 +27,8 @@ set(EXECUTABLE_SRCS
     PatchHandler.h
     RealmList.cpp
     RealmList.h
+    SessionManager.cpp
+    SessionManager.h
    )
 
 if(WIN32)
@@ -35,11 +37,13 @@ if(WIN32)
 endif()
 
 include_directories(
+  ${CMAKE_SOURCE_DIR}/dep/backtrace
   ${CMAKE_SOURCE_DIR}/src/shared
   ${CMAKE_SOURCE_DIR}/src/framework
   ${CMAKE_BINARY_DIR}
   ${CMAKE_BINARY_DIR}/src/shared
   ${MYSQL_INCLUDE_DIR}
+  ${OPENSSL_INCLUDE_DIR}
   ${ACE_INCLUDE_DIR}
 )
 
@@ -48,15 +52,15 @@ add_executable(${EXECUTABLE_NAME}
 )
 
 add_dependencies(${EXECUTABLE_NAME} revision.h)
-if(NOT ACE_USE_EXTERNAL)
-  add_dependencies(${EXECUTABLE_NAME} ACE_Project)
-# add_dependencies(${EXECUTABLE_NAME} ace)
+if(WIN32)
+  add_dependencies(${EXECUTABLE_NAME} ace)
 endif()
 
 target_link_libraries(${EXECUTABLE_NAME}
   shared
   framework
   backtrace
+  ${OPENSSL_LIBRARIES}
   ${Boost_LIBRARIES}
   ${ACE_LIBRARIES}
 )
@@ -64,9 +68,7 @@ target_link_libraries(${EXECUTABLE_NAME}
 if(WIN32)
   target_link_libraries(${EXECUTABLE_NAME}
     optimized ${MYSQL_LIBRARY}
-    optimized ${OPENSSL_LIBRARIES}
     debug ${MYSQL_DEBUG_LIBRARY}
-    debug ${OPENSSL_DEBUG_LIBRARIES}
   )
   if(PLATFORM MATCHES X86)
     target_link_libraries(${EXECUTABLE_NAME})
@@ -76,8 +78,6 @@ endif()
 if(UNIX)
   target_link_libraries(${EXECUTABLE_NAME}
     ${MYSQL_LIBRARY}
-    ${OPENSSL_LIBRARIES}
-    ${OPENSSL_EXTRA_LIBRARIES}
   )
 endif()
 

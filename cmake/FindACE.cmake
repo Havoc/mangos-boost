@@ -24,7 +24,6 @@ if ( UNIX )
       ${ACE_ROOT}/include
       $ENV{ACE_ROOT}
       $ENV{ACE_ROOT}/include
-      # ${CMAKE_SOURCE_DIR}/dep/ACE_wrappers
   DOC
     "Specify include-directories that might contain ace.h here."
   )

@@ -16,12 +16,13 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-if(NOT (TBB_USE_EXTERNAL OR USE_STD_MALLOC))
-  add_subdirectory(tbb)
-endif()
+# if(NOT USE_STD_MALLOC)
+#   add_subdirectory(tbb-4.2u5)
+# endif()
 
-if(NOT ACE_USE_EXTERNAL)
-  add_subdirectory(ACE_wrappers)
+if(WIN32)
+  add_subdirectory(ace-6.2.6)
+  add_subdirectory(zlib-1.2.8)
 endif()
 
 add_subdirectory(recastnavigation)
