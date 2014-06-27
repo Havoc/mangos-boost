@@ -15,7 +15,10 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-set(DETOUR_SRCS
+
+set(LIBRARY_NAME cmangos_dependency_detour)
+
+set(DETOUR_SOURCE
     DetourAlloc.cpp
     DetourCommon.cpp
     DetourNavMeshBuilder.cpp
@@ -25,6 +28,5 @@ set(DETOUR_SRCS
     DetourObstacleAvoidance.cpp
 )
 
-add_library(detour STATIC
-  ${DETOUR_SRCS}
-)
+add_library(${LIBRARY_NAME} STATIC ${DETOUR_SOURCE})
+set_target_properties(${LIBRARY_NAME} PROPERTIES FOLDER Dependencies)

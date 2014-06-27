@@ -19,7 +19,7 @@
 #ifndef SC_DEFINES_H
 #define SC_DEFINES_H
 
-#include "../ScriptMgr.h"
+#include "ScriptMgr.h"
 
 // Skill defines
 

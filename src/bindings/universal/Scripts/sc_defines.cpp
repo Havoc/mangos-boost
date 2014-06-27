@@ -17,8 +17,7 @@
  */
 
 #include "sc_defines.h"
-
-#include "../../../game/Player.h"
+#include "Player.h"
 
 uint32 GetSkillLevel(Player* player, uint32 trskill)
 {

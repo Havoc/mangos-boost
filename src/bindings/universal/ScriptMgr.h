@@ -20,9 +20,9 @@
 #define SCRIPTMGR_H
 
 // Only required includes
-#include "../../game/CreatureAI.h"
-#include "../../game/Creature.h"
-#include "../../game/InstanceData.h"
+#include "CreatureAI.h"
+#include "Creature.h"
+#include "InstanceData.h"
 
 class Player;
 class Creature;

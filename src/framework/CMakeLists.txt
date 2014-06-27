@@ -16,7 +16,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-set(LIBRARY_NAME framework)
+set(LIBRARY_NAME cmangos_library_framework)
 
 set(SRC_GRP_CONFIGURATION
     configuration/Config.cpp
@@ -196,86 +196,25 @@ set(LIBRARY_SRCS
     revision_sql.h
 )
 
-source_group("Configuration"
-  FILES
-    ${SRC_GRP_CONFIGURATION}
-)
+source_group("Configuration" FILES ${SRC_GRP_CONFIGURATION})
+source_group("Cryptography" FILES ${SRC_GRP_CRYPTOGRAPHY})
+source_group("Database" FILES ${SRC_GRP_DATABASE})
+source_group("Database\\DataStores" FILES ${SRC_GRP_DATABASE_DBC})
+source_group("Debugging" FILES ${SRC_GRP_DEBUGGING})
+source_group("Dynamic" FILES ${SRC_GRP_DYNAMIC})
+source_group("GameSystem" FILES ${SRC_GRP_GAMESYSTEM})
+source_group("Log" FILES ${SRC_GRP_LOG})
+source_group("Network" FILES ${SRC_GRP_NETWORK})
+source_group("Platform" FILES ${SRC_GRP_PLATFORM})
+source_group("Policies" FILES ${SRC_GRP_POLICIES})
+source_group("System" FILES ${SRC_GRP_SYSTEM})
+source_group("Threading" FILES ${SRC_GRP_THREADING})
+source_group("Utilities" FILES ${SRC_GRP_UTILITIES})
+source_group("Utilities\\LinkedReference" FILES ${SRC_GRP_LINKED_REFERENCE})
 
-source_group("Cryptography"
-  FILES
-    ${SRC_GRP_CRYPTOGRAPHY}
-)
-
-source_group("Database"
-  FILES
-    ${SRC_GRP_DATABASE}
-)
-
-source_group("Database\\DataStores"
-  FILES
-    ${SRC_GRP_DATABASE_DBC}
-)
-
-source_group("Debugging"
-  FILES
-    ${SRC_GRP_DEBUGGING}
-)
-
-source_group("Dynamic"
-  FILES
-    ${SRC_GRP_DYNAMIC}
-)
-
-source_group("GameSystem"
-  FILES
-    ${SRC_GRP_GAMESYSTEM}
-)
-
-source_group("Log"
-  FILES
-    ${SRC_GRP_LOG}
-)
-
-source_group("Network"
-  FILES
-    ${SRC_GRP_NETWORK}
-)
-
-source_group("Platform"
-  FILES
-    ${SRC_GRP_PLATFORM}
-)
-
-source_group("Policies"
-  FILES
-    ${SRC_GRP_POLICIES}
-)
-
-source_group("System"
-  FILES
-    ${SRC_GRP_SYSTEM}
-)
-
-source_group("Threading"
-  FILES
-    ${SRC_GRP_THREADING}
-)
-
-source_group("Utilities"
-  FILES
-    ${SRC_GRP_UTILITIES}
-)
-
-source_group("Utilities\\LinkedReference"
-  FILES
-    ${SRC_GRP_LINKED_REFERENCE}
-)
-
-# Includes
 include_directories(
   ${ACE_INCLUDE_DIR}
   ${OPENSSL_INCLUDE_DIR}
-  ${TBB_INCLUDE_DIR}
   ${CMAKE_SOURCE_DIR}/dep/include
   ${CMAKE_SOURCE_DIR}/dep/backtrace
   ${CMAKE_CURRENT_SOURCE_DIR}
@@ -294,28 +233,34 @@ include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/utilities
   ${CMAKE_BINARY_DIR}
 )
+
+if(NOT USE_STD_MALLOC)
+  include_directories(${TBB_INCLUDE_DIR})
+endif()
+
 if(POSTGRESQL)
   include_directories(${PostgreSQL_INCLUDE_DIRS})
 else()
   include_directories(${MYSQL_INCLUDE_DIR})
 endif()
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/system/SystemConfig.h.in ${CMAKE_CURRENT_SOURCE_DIR}/system/SystemConfig.h)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/system/SystemConfig.h.in ${CMAKE_BINARY_DIR}/SystemConfig.h)
 
-add_library(${LIBRARY_NAME} STATIC
-  ${LIBRARY_SRCS}
-)
+add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SRCS})
+set_target_properties(${LIBRARY_NAME} PROPERTIES FOLDER Libraries)
 
-# Libraries
-target_link_libraries(${LIBRARY_NAME}
-  ${TBB_LIBRARIES}
-)
-if(POSTGRESQL)
-  target_link_libraries(${LIBRARY_NAME} ${PostgreSQL_LIBRARIES})
-endif()
-
-# Dependencies
 add_dependencies(${LIBRARY_NAME} revision.h)
 if(WIN32)
-  add_dependencies(${LIBRARY_NAME} ace)
+  add_dependencies(${LIBRARY_NAME} cmangos_dependency_ace)
+endif()
+
+if(NOT USE_STD_MALLOC)
+  target_link_libraries(${LIBRARY_NAME}
+    optimized ${TBB_LIBRARIES}
+    debug ${TBB_LIBRARIES_DEBUG}
+  )
+endif()
+
+if(POSTGRESQL)
+  target_link_libraries(${LIBRARY_NAME} ${PostgreSQL_LIBRARIES})
 endif()

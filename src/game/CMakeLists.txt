@@ -16,37 +16,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-set(LIBRARY_NAME game)
-
-include_directories(
-  ${ACE_INCLUDE_DIR}
-  ${MYSQL_INCLUDE_DIR}
-  ${OPENSSL_INCLUDE_DIR}
-  ${CMAKE_SOURCE_DIR}/dep/backtrace
-  ${CMAKE_SOURCE_DIR}/dep/include/g3dlite
-  ${CMAKE_SOURCE_DIR}/dep/recastnavigation/
-  ${CMAKE_SOURCE_DIR}/dep/include
-  ${CMAKE_SOURCE_DIR}/src/framework
-  ${CMAKE_SOURCE_DIR}/src/framework/configuration
-  ${CMAKE_SOURCE_DIR}/src/framework/cryptography
-  ${CMAKE_SOURCE_DIR}/src/framework/database
-  ${CMAKE_SOURCE_DIR}/src/framework/debugging
-  ${CMAKE_SOURCE_DIR}/src/framework/dynamic
-  ${CMAKE_SOURCE_DIR}/src/framework/game_system
-  ${CMAKE_SOURCE_DIR}/src/framework/log
-  ${CMAKE_SOURCE_DIR}/src/framework/network
-  ${CMAKE_SOURCE_DIR}/src/framework/platform
-  ${CMAKE_SOURCE_DIR}/src/framework/policies
-  ${CMAKE_SOURCE_DIR}/src/framework/system
-  ${CMAKE_SOURCE_DIR}/src/framework/threading
-  ${CMAKE_SOURCE_DIR}/src/framework/utilities
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_CURRENT_SOURCE_DIR}/vmap
-  ${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouseBot
-  ${CMAKE_CURRENT_SOURCE_DIR}/BattleGround
-  ${CMAKE_CURRENT_SOURCE_DIR}/OutdoorPvP
-  ${CMAKE_BINARY_DIR}
-)
+set(LIBRARY_NAME cmangos_library_game)
 
 set(SRC_GRP_AHBOT
     AuctionHouseBot/AuctionHouseBot.cpp
@@ -440,76 +410,64 @@ set(LIBRARY_SRCS
     pchdef.h
 )
 
-source_group("AhBot"
-  FILES
-    ${SRC_GRP_AHBOT}
-)
+source_group("AhBot" FILES ${SRC_GRP_AHBOT})
+source_group("BattleGround" FILES ${SRC_GRP_BATTLEGROUND})
+source_group("Chat Commands" FILES ${SRC_GRP_CHAT_COMMANDS})
+source_group("Motion generators" FILES ${SRC_GRP_MOTION_GEN})
+source_group("Movement" FILES ${SRC_GRP_MOVEMENT})
+source_group("Object" FILES ${SRC_GRP_OBJECT})
+source_group("Outdoor PvP" FILES ${SRC_GRP_OUTDOOR_PVP})
+source_group("References" FILES ${SRC_GRP_REFERENCES})
+source_group("Server" FILES ${SRC_GRP_SERVER})
+source_group("Tool" FILES ${SRC_GRP_TOOL})
+source_group("vmaps" FILES ${SRC_GRP_VMAPS})
+source_group("World/Handlers" FILES ${SRC_GRP_WORLD_HANDLERS})
 
-source_group("BattleGround"
-  FILES
-    ${SRC_GRP_BATTLEGROUND}
-)
-
-source_group("Chat Commands"
-  FILES
-    ${SRC_GRP_CHAT_COMMANDS}
-)
-
-source_group("Motion generators"
-  FILES
-    ${SRC_GRP_MOTION_GEN}
-)
-
-source_group("Movement"
-  FILES
-    ${SRC_GRP_MOVEMENT}
-)
-
-source_group("Object"
-  FILES
-    ${SRC_GRP_OBJECT}
-)
-
-source_group("Outdoor PvP"
-  FILES
-    ${SRC_GRP_OUTDOOR_PVP}
-)
-
-source_group("References"
-  FILES
-    ${SRC_GRP_REFERENCES}
-)
-
-source_group("Server"
-  FILES
-    ${SRC_GRP_SERVER}
-)
-
-source_group("Tool"
-  FILES
-    ${SRC_GRP_TOOL}
-)
-
-source_group("vmaps"
-  FILES
-    ${SRC_GRP_VMAPS}
-)
-
-source_group("World/Handlers"
-  FILES
-    ${SRC_GRP_WORLD_HANDLERS}
+include_directories(
+  ${ACE_INCLUDE_DIR}
+  ${MYSQL_INCLUDE_DIR}
+  ${OPENSSL_INCLUDE_DIR}
+  ${ZLIB_INCLUDE_DIRS}
+  ${CMAKE_SOURCE_DIR}/dep/backtrace
+  ${CMAKE_SOURCE_DIR}/dep/g3dlite
+  ${CMAKE_SOURCE_DIR}/dep/recastnavigation
+  ${CMAKE_SOURCE_DIR}/dep/include
+  ${CMAKE_SOURCE_DIR}/src/framework
+  ${CMAKE_SOURCE_DIR}/src/framework/configuration
+  ${CMAKE_SOURCE_DIR}/src/framework/cryptography
+  ${CMAKE_SOURCE_DIR}/src/framework/database
+  ${CMAKE_SOURCE_DIR}/src/framework/debugging
+  ${CMAKE_SOURCE_DIR}/src/framework/dynamic
+  ${CMAKE_SOURCE_DIR}/src/framework/game_system
+  ${CMAKE_SOURCE_DIR}/src/framework/log
+  ${CMAKE_SOURCE_DIR}/src/framework/network
+  ${CMAKE_SOURCE_DIR}/src/framework/platform
+  ${CMAKE_SOURCE_DIR}/src/framework/policies
+  ${CMAKE_SOURCE_DIR}/src/framework/system
+  ${CMAKE_SOURCE_DIR}/src/framework/threading
+  ${CMAKE_SOURCE_DIR}/src/framework/utilities
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/vmap
+  ${CMAKE_CURRENT_SOURCE_DIR}/AuctionHouseBot
+  ${CMAKE_CURRENT_SOURCE_DIR}/BattleGround
+  ${CMAKE_CURRENT_SOURCE_DIR}/OutdoorPvP
+  ${CMAKE_BINARY_DIR}
 )
 
 if(PCH)
   include_directories(${CMAKE_CURRENT_BINARY_DIR})
 endif()
 
-add_library(${LIBRARY_NAME} STATIC
-  ${LIBRARY_SRCS}
-)
+add_library(${LIBRARY_NAME} STATIC ${LIBRARY_SRCS})
+set_target_properties(${LIBRARY_NAME} PROPERTIES FOLDER Libraries)
+
+add_dependencies(${LIBRARY_NAME} revision.h)
+if(WIN32)
+  add_dependencies(${LIBRARY_NAME} cmangos_dependency_ace)
+endif()
 
 target_link_libraries(${LIBRARY_NAME}
-  detour
+  cmangos_dependency_detour
 )
 
 if(UNIX)
@@ -519,12 +477,6 @@ if(UNIX)
       dl
     )
   endif()
-endif()
-
-add_dependencies(${LIBRARY_NAME} revision.h)
-
-if(WIN32)
-  add_dependencies(${LIBRARY_NAME} ace)
 endif()
 
 # Generate precompiled header

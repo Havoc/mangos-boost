@@ -16,6 +16,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
+set(LIBRARY_NAME cmangos_dependency_zlib)
+
 SET(ZLIB_SOURCE
   adler32.c
   compress.c
@@ -30,6 +32,5 @@ SET(ZLIB_SOURCE
   zutil.c
 )
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR})
-
-add_library(zlib STATIC ${ZLIB_SOURCE})
+add_library(${LIBRARY_NAME} STATIC ${ZLIB_SOURCE})
+set_target_properties(${LIBRARY_NAME} PROPERTIES FOLDER Dependencies)

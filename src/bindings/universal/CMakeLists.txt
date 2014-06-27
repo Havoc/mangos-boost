@@ -16,7 +16,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-set(LIBRARY_NAME mangosscript)
+set(LIBRARY_NAME cmangos_library_scripts)
 
 set(LIBRARY_SRCS
     config.h
@@ -32,30 +32,12 @@ include_directories(
   ${ACE_INCLUDE_DIR}
   ${MYSQL_INCLUDE_DIR}
   ${CMAKE_SOURCE_DIR}/src/framework
-  ${CMAKE_SOURCE_DIR}/src/framework/configuration
-  ${CMAKE_SOURCE_DIR}/src/framework/cryptography
-  ${CMAKE_SOURCE_DIR}/src/framework/database
-  ${CMAKE_SOURCE_DIR}/src/framework/debugging
-  ${CMAKE_SOURCE_DIR}/src/framework/dynamic
-  ${CMAKE_SOURCE_DIR}/src/framework/game_system
-  ${CMAKE_SOURCE_DIR}/src/framework/log
-  ${CMAKE_SOURCE_DIR}/src/framework/network
-  ${CMAKE_SOURCE_DIR}/src/framework/platform
-  ${CMAKE_SOURCE_DIR}/src/framework/policies
-  ${CMAKE_SOURCE_DIR}/src/framework/system
-  ${CMAKE_SOURCE_DIR}/src/framework/threading
-  ${CMAKE_SOURCE_DIR}/src/framework/utilities
+  ${CMAKE_SOURCE_DIR}/src/game
+  ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_BINARY_DIR}
 )
 
-add_library(${LIBRARY_NAME} SHARED
-  ${LIBRARY_SRCS}
-)
-
-add_dependencies(${LIBRARY_NAME} revision.h)
-if(WIN32)
-  add_dependencies(${LIBRARY_NAME} ace)
-endif()
+add_library(${LIBRARY_NAME} SHARED ${LIBRARY_SRCS})
 
 target_link_libraries(${LIBRARY_NAME}
   ${ZLIB_LIBRARIES}
@@ -97,6 +79,11 @@ if(UNIX)
     LINK_FLAGS ${LIBRARY_LINK_FLAGS}
     ${LIBRARY_PROPERTIES}
   )
+endif()
+
+add_dependencies(${LIBRARY_NAME} revision.h)
+if(WIN32)
+  add_dependencies(${LIBRARY_NAME} cmangos_dependency_ace)
 endif()
 
 # LIBRARY = dyld / so, RUNTIME = dll

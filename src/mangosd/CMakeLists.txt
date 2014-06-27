@@ -16,7 +16,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-set(EXECUTABLE_NAME mangosd)
+set(EXECUTABLE_NAME cmangos_service_mangosd)
 
 set(EXECUTABLE_SRCS
     CliRunnable.cpp
@@ -33,8 +33,8 @@ set(EXECUTABLE_SRCS
     soapStub.h
    )
 
+# Add resource file to windows build
 if(WIN32)
-  # add resource file to windows build
   set(EXECUTABLE_SRCS ${EXECUTABLE_SRCS} mangosd.rc)
 endif()
 
@@ -58,6 +58,7 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/src/framework/threading
   ${CMAKE_SOURCE_DIR}/src/framework/utilities
   ${CMAKE_SOURCE_DIR}/src/game
+  ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_BINARY_DIR}
 )
 
@@ -67,30 +68,28 @@ else()
   include_directories(${MYSQL_INCLUDE_DIR})
 endif()
 
-add_executable(${EXECUTABLE_NAME}
-  ${EXECUTABLE_SRCS}
-)
+add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_SRCS})
+set_target_properties(${EXECUTABLE_NAME} PROPERTIES FOLDER Services)
 
 add_dependencies(${EXECUTABLE_NAME} revision.h)
-
 if(WIN32)
-  add_dependencies(${EXECUTABLE_NAME} ace)
+  add_dependencies(${EXECUTABLE_NAME} cmangos_dependency_ace)
 endif()
 
 target_link_libraries(${EXECUTABLE_NAME}
-  game
-  framework
-  g3dlite
-  gsoap
-  backtrace
-  ${OPENSSL_LIBRARIES}
-  ${Boost_LIBRARIES}
   ${ACE_LIBRARIES}
+  ${Boost_LIBRARIES}
+  ${OPENSSL_LIBRARIES}
+  cmangos_dependency_backtrace
+  cmangos_dependency_g3dlite
+  cmangos_dependency_gsoap
+  cmangos_library_framework
+  cmangos_library_game
 )
 
 if(WIN32)
   target_link_libraries(${EXECUTABLE_NAME}
-    zlib
+    cmangos_dependency_zlib
     optimized ${MYSQL_LIBRARY}
     debug ${MYSQL_DEBUG_LIBRARY}
   )

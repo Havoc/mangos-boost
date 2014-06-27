@@ -16,6 +16,8 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
+set(LIBRARY_NAME cmangos_dependency_ace)
+
 # NOTE: Do not use glob here, it would include files we don't want
 set(ACE_SOURCE
   ACE.cpp
@@ -38,7 +40,6 @@ set(ACE_SOURCE
   ATM_Stream.cpp
   Atomic_Op.cpp
   Atomic_Op_Sparc.c
-#  Auto_Event.cpp
   Barrier.cpp
   Base_Thread_Adapter.cpp
   Based_Pointer_Repository.cpp
@@ -78,7 +79,6 @@ set(ACE_SOURCE
   Dynamic_Service_Dependency.cpp
   Encoding_Converter.cpp
   Encoding_Converter_Factory.cpp
-#  Event.cpp
   Event_Base.cpp
   Event_Handler.cpp
   Event_Handler_Handle_Timeout_Upcall.cpp
@@ -131,7 +131,6 @@ set(ACE_SOURCE
   LSOCK_Stream.cpp
   Malloc.cpp
   Malloc_Allocator.cpp
-#  Manual_Event.cpp
   MEM_Acceptor.cpp
   MEM_Addr.cpp
   MEM_Connector.cpp
@@ -330,18 +329,17 @@ set(ACE_SOURCE
 )
 
 include_directories(
+  ${ZLIB_INCLUDE_DIRS}
   ${CMAKE_SOURCE_DIR}/dep/ace-6.2.6
-  ${CMAKE_SOURCE_DIR}/dep/zlib-1.2.8
 )
 
 add_definitions(-DACE_BUILD_DLL)
 
-add_library(ace SHARED
-  ${ACE_SOURCE}
-)
+add_library(${LIBRARY_NAME} SHARED ${ACE_SOURCE})
+set_target_properties(${LIBRARY_NAME} PROPERTIES FOLDER Dependencies)
 
 if (MINGW) # GCC ignores "#prama comment"
-  target_link_libraries(ace ws2_32 iphlpapi netapi32 mswsock)
+  target_link_libraries(${LIBRARY_NAME} ws2_32 iphlpapi netapi32 mswsock)
 endif()
 
-install(TARGETS ace RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}")
+install(TARGETS ${LIBRARY_NAME} RUNTIME DESTINATION "${CMAKE_INSTALL_PREFIX}")

@@ -16,9 +16,9 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-set(LIBRARY_NAME g3dlite)
+set(LIBRARY_NAME cmangos_dependency_g3dlite)
 
-set(LIBRARY_SRCS
+set(G3D_SOURCE
     AABox.cpp
     Any.cpp
     #AnyVal.cpp
@@ -119,19 +119,11 @@ set(LIBRARY_SRCS
     uint128.cpp
 )
 
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/dep/include
-  ${CMAKE_SOURCE_DIR}/dep/include/g3dlite
-  ${CMAKE_SOURCE_DIR}/dep/include/zlib
-)
-
-add_library(${LIBRARY_NAME} STATIC
-  ${LIBRARY_SRCS}
-)
+include_directories(${CMAKE_SOURCE_DIR}/dep/zlib-1.2.8)
 
 if(WIN32)
-  target_link_libraries(${LIBRARY_NAME}
-    zlib
-  )
+  target_link_libraries(cmangos_dependency_zlib)
 endif()
+
+add_library(${LIBRARY_NAME} STATIC ${G3D_SOURCE})
+set_target_properties(${LIBRARY_NAME} PROPERTIES FOLDER Dependencies)

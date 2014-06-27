@@ -21,54 +21,24 @@ cmake_minimum_required(VERSION 2.8)
 project(CMaNGOS)
 set(MANGOS_VERSION 0.18)
 
+# Use solution folders
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 set(CMAKE_MODULE_PATH
   ${CMAKE_MODULE_PATH}
-  ${CMAKE_SOURCE_DIR}/cmake
+  ${CMAKE_SOURCE_DIR}/cmake/modules
 )
 
-# define all options here
-option(DEBUG                "Debug mode"                            OFF)
-option(USE_STD_MALLOC       "Use standard malloc instead of TBB"    OFF)
-option(POSTGRESQL           "Use PostgreSQL"                        OFF)
-
-if(PCHSupport_FOUND AND WIN32) # TODO: why only enable it on windows by default?
-  option(PCH                "Use precompiled headers"               ON)
-else()
-  option(PCH                "Use precompiled headers"               OFF)
-endif()
-# TODO: options that should be checked/created:
-#option(CLI                  "With CLI"                              ON)
-#option(RA                   "With Remote Access"                    OFF)
-#option(SQL                  "Copy SQL files"                        OFF)
-#option(TOOLS                "Build tools"                           OFF)
-
-# Output description of this script
-message("")
-message(
-  "This script builds the MaNGOS server.
-  Options that can be used in order to configure the process:
-    CMAKE_INSTALL_PREFIX    Path where the server should be installed to
-    PCH                     Use precompiled headers
-    DEBUG                   Debug mode
-    INCLUDE_BINDINGS_DIR    Include a script library in src/bindings/ with the
-                            defined name. the name must corespond to the name of
-                            the folder and the folder must contain a valid
-                            CMakeLists.txt
-    USE_STD_MALLOC          Use standard malloc instead of TBB
-  To set an option simply type -D<OPTION>=<VALUE> after 'cmake <srcs>'.
-  Also, you can specify the generator with -G. see 'cmake --help' for more details
-  For example: cmake .. -DDEBUG=1 -DCMAKE_INSTALL_PREFIX=/opt/mangos"
-)
-message("")
+include(cmake/options.cmake)
 
 # Force out-of-source build
 if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR})
   message(FATAL_ERROR
-    "This project requires an out of source build. Remove the file 'CMakeCache.txt' found in this directory before continuing, create a separate build directory and run 'cmake [options] <srcs>' from there."
-  )
+    "This project requires an out of source build. Remove the file 'CMakeCache.txt' found in this\n"
+    "directory before continuing, create a separate build directory and run 'cmake [options] <srcs>' from there.")
 endif()
 
-# find boost lib
+# Find Boost libraries
 set(BOOST_ROOT $ENV{BOOST_ROOT})
 set(Boost_USE_STATIC_LIBS   ON)
 set(Boost_USE_MULTITHREADED ON)
@@ -78,14 +48,7 @@ link_directories(${Boost_LIBRARY_DIRS})
 
 # TODO: allow other compilers under windows in the future
 if(WIN32 AND NOT MSVC)
-  message(FATAL_ERROR
-    "Under Windows other compiler than Microsoft Visual Studio are not supported."
-  )
-endif()
-
-# TODO: remove this in the future! it has only been added to make the switch easier for end users
-if(PREFIX)
-  message(FATAL_ERROR "The parameter PREFIX has been removed. Please re-run CMake and use CMAKE_INSTALL_PREFIX instead to define your installation location!")
+  message(FATAL_ERROR "Under Windows other compiler than Microsoft Visual Studio are not supported.")
 endif()
 
 # TODO: use MSVC_CXX_ARCHITECTURE_ID instead to identify platform on windows (not required on other systems)
@@ -99,15 +62,6 @@ if(WIN32)
     set(DEP_ARCH x64)
   endif()
 endif()
-
-# Find Git for getting the revision number
-find_package(Git)
-
-# Check if the platform supports precomiled headers
-find_package(PCHSupport)
-
-# Find OpenSSL libraries
-find_package(OpenSSL REQUIRED)
 
 # Override configuration-types - we don't use anything else than debug and release
 if(CMAKE_CONFIGURATION_TYPES)
@@ -132,43 +86,41 @@ set(CMAKE_INSTALL_NAME_DIR ${LIBS_DIR})
 # Run out of build tree
 set(CMAKE_BUILD_WITH_INSTALL_RPATH OFF)
 
-# Find needed packages and if necessery abort if something important is missing
-if(UNIX)
-  find_package(ACE)
-  if(NOT ACE_FOUND)
-    message(FATAL_ERROR
-      "This project requires ACE installed. Please download the ACE Micro Release Kit from http://download.dre.vanderbilt.edu/ and install it. If this script didn't find ACE and it was correctly installed please set ACE_ROOT to the correct path."
-    )
-  endif()
-else()
-  set(ACE_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/dep/ace-6.2.6)
-  set(ACE_LIBRARIES "ace")
-endif()
+find_package(Git)
+find_package(PCHSupport)
+find_package(OpenSSL REQUIRED)
 
-if(NOT USE_STD_MALLOC)
-  if(UNIX)
-    find_package(TBB)
-    if(NOT TBB_FOUND)
-      message(FATAL_ERROR
-        "This project requires TBB installed. Please download the TBB Stable Release from http://www.threadingbuildingblocks.org/ and install it. If this script didn't find TBB and it was correctly installed please set TBB_ROOT to the correct path."
-      )
-    endif()
-  else()
-    set(TBB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/dep/tbb-4.2u5/include)
-    # FIXME
-    set(TBB_LIBRARIES ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_release/tbb.lib)
-  endif()
-endif()
-
-# Win32 delivered packages
 if(WIN32)
+  set(ACE_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/dep/ace-6.2.6)
+  set(ACE_LIBRARIES "cmangos_dependency_ace")
   set(MYSQL_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/dep/include/mysql)
   set(MYSQL_LIBRARY ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_release/libmySQL.lib)
   set(MYSQL_DEBUG_LIBRARY ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_debug/libmySQL.lib)
+  set(ZLIB_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/dep/zlib-1.2.8)
+  set(TBB_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/dep/tbb-4.2u5/include)
+  set(TBB_LIBRARIES ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_release/tbbmalloc.lib)
+  set(TBB_LIBRARIES_DEBUG ${CMAKE_SOURCE_DIR}/dep/lib/${DEP_ARCH}_debug/tbbmalloc_debug.lib)
 endif()
 
-# *nix-specific packages
 if(UNIX)
+  find_package(ACE REQUIRED)
+  if(NOT ACE_FOUND)
+    message(FATAL_ERROR
+      "This project requires ACE installed. Please download the ACE Micro Release Kit from\n"
+      "http://download.dre.vanderbilt.edu/ and install it. If this script didn't find ACE and\n"
+      "it was correctly installed please set ACE_ROOT to the correct path.")
+  endif()
+
+  if(NOT USE_STD_MALLOC)
+    find_package(TBB)
+    if(NOT TBB_FOUND)
+      message(FATAL_ERROR
+        "This project requires TBB installed. Please download the TBB Stable Release from\n"
+        "http://www.threadingbuildingblocks.org/ and install it. If this script didn't find TBB\n"
+        "and it was correctly installed please set TBB_ROOT to the correct path.")
+    endif()
+  endif()
+
   if(POSTGRESQL)
     find_package(PostgreSQL REQUIRED)
     if(POSTGRESQL_FOUND)
@@ -177,6 +129,7 @@ if(UNIX)
   else()
     find_package(MySQL REQUIRED)
   endif()
+
   find_package(ZLIB REQUIRED)
 endif()
 
@@ -187,9 +140,7 @@ configure_file(
   IMMEDIATE @ONLY
 )
 
-add_custom_target(uninstall
-  "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-)
+add_custom_target(uninstall "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
 
 # Find core revision
 if(GIT_EXECUTABLE)
@@ -208,62 +159,7 @@ else()
   set(GIT_REVISION "Git not found")
 endif()
 
-message(STATUS "MaNGOS-Core revision  : ${GIT_REVISION}")
-message(STATUS "Install server to     : ${CMAKE_INSTALL_PREFIX}")
-
-if(DEFINED INCLUDE_BINDINGS_DIR AND INCLUDE_BINDINGS_DIR)
-  # check if the directory exists
-  if(NOT IS_DIRECTORY ${CMAKE_SOURCE_DIR}/src/bindings/${INCLUDE_BINDINGS_DIR})
-    message(FATAL_ERROR "Could not find the script library which was supposed to be: " ${CMAKE_SOURCE_DIR}/src/bindings/${INCLUDE_BINDINGS_DIR})
-  endif()
-  # check if it really contains a CMakeLists.txt
-  if(NOT EXISTS ${CMAKE_SOURCE_DIR}/src/bindings/${INCLUDE_BINDINGS_DIR}/CMakeLists.txt)
-    message(FATAL_ERROR "The script library does not contain a CMakeLists.txt!")
-  endif()
-  message(STATUS "Build script library  : Yes (using ${INCLUDE_BINDINGS_DIR})")
-else()
-  message(STATUS "Build script library  : No")
-endif()
-
-# if(CLI)
-#   message(STATUS "Build with CLI        : Yes (default)")
-#   add_definitions(-DENABLE_CLI)
-# else()
-#   message(STATUS "Build with CLI        : No")
-# endif()
-
-# if(RA)
-#   message(STATUS "* Build with RA         : Yes")
-#   add_definitions(-DENABLE_RA)
-# else(RA)
-#   message(STATUS "* Build with RA         : No  (default)")
-# endif(RA)
-
-if(PCH AND NOT PCHSupport_FOUND)
-  set(PCH 0 CACHE BOOL
-    "Use precompiled headers"
-    FORCE)
-  message(WARNING "No PCH for your system possible but PCH was set to 1. Resetting it."
-  )
-endif()
-if(PCH)
-  message(STATUS "Use PCH               : Yes")
-else()
-  message(STATUS "Use PCH               : No")
-endif()
-
-if(DEBUG)
-  message(STATUS "Build in debug-mode   : Yes")
-  set(CMAKE_BUILD_TYPE Debug)
-else()
-  set(CMAKE_BUILD_TYPE Release)
-  message(STATUS "Build in debug-mode   : No  (default)")
-endif()
-# Handle debugmode compiles (this will require further work for proper WIN32-setups)
-if(UNIX)
-  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
-  set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
-endif()
+include(cmake/show_options.cmake)
 
 # Set warning levels for different builds
 if(UNIX)
@@ -281,18 +177,6 @@ elseif(WIN32)
   endif()
 endif()
 
-# if(SQL)
-#   message(STATUS "Install SQL-files     : Yes")
-# else()
-#   message(STATUS "Install SQL-files     : No  (default)")
-# endif()
-
-# if(TOOLS)
-#   message(STATUS "Build map/vmap tools  : Yes")
-# else()
-#   message(STATUS "Build map/vmap tools  : No  (default)")
-# endif()
-
 # Some small tweaks for Visual Studio 7 and above.
 if(MSVC)
   # Mark 32 bit executables large address aware so they can use > 2GB address space
@@ -307,14 +191,8 @@ set(CMAKE_INSTALL_RPATH ${LIBS_DIR})
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Generate revision-extractor
-set(GENREV_SRC
-  src/tools/genrevision/genrevision.cpp
-)
-
-add_executable(genrev
-  ${GENREV_SRC}
-)
-
+set(GENREV_SRC src/tools/genrevision/genrevision.cpp)
+add_executable(genrev ${GENREV_SRC})
 get_target_property(GENERATE_EXE genrev LOCATION)
 add_custom_target("revision.h" ALL
   COMMAND ${GENERATE_EXE} ${CMAKE_SOURCE_DIR}
@@ -362,7 +240,8 @@ endif()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/config.h.cmake ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 
-add_subdirectory(dep) # TODO: add vmap extractor build support
+# TODO: add vmap extractor build support
+add_subdirectory(dep)
 
 # Add definitions for all build types
 # Don't place this above 'dep' subdirectory! Because of defines build will crash.

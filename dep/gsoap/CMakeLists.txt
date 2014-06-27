@@ -16,17 +16,13 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-set(LIBRARY_NAME gsoap)
+set(LIBRARY_NAME cmangos_dependency_gsoap)
 
-set(LIBRARY_SRCS
+set(GSOAP_SOURCE
     stdsoap2.cpp
+    stdsoap2.h
    )
 
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${CMAKE_SOURCE_DIR}/dep/include/gsoap
-)
+add_library(${LIBRARY_NAME} STATIC ${GSOAP_SOURCE})
 
-add_library(${LIBRARY_NAME} STATIC
-  ${LIBRARY_SRCS}
-)
+set_target_properties(${LIBRARY_NAME} PROPERTIES FOLDER Dependencies)

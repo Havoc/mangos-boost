@@ -15,15 +15,13 @@
 # along with this program; if not, write to the Free Software
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
-set(backtrace_SRCS
+
+set(LIBRARY_NAME cmangos_dependency_backtrace)
+
+set(BACKTRACE_SOURCE
     boost/backtrace.cpp
     boost/backtrace.hpp
 )
 
-include_directories(
-  ${CMAKE_CURRENT_SOURCE_DIR}
-)
-
-add_library(backtrace STATIC
-  ${backtrace_SRCS}
-)
+add_library(${LIBRARY_NAME} STATIC ${BACKTRACE_SOURCE})
+set_target_properties(${LIBRARY_NAME} PROPERTIES FOLDER Dependencies)

@@ -15,7 +15,6 @@ FIND_PATH(TBB_INCLUDE_DIR tbb/task_scheduler_init.h
     ${TBB_ROOT}/include
     $ENV{TBB_ROOT}
     $ENV{TBB_ROOT}/include
-    # ${CMAKE_SOURCE_DIR}/dep/tbb/include
 )
 
 FIND_LIBRARY(TBB_LIBRARIES
@@ -28,7 +27,6 @@ FIND_LIBRARY(TBB_LIBRARIES
     ${TBB_ROOT}/lib
     $ENV{TBB_ROOT}
     $ENV{TBB_ROOT}/lib
-    # ${CMAKE_SOURCE_DIR}/dep/tbb/build/vsproject/ia32/Release
 )
 
 FIND_LIBRARY(TBB_EXTRA_LIBRARIES
@@ -41,7 +39,6 @@ FIND_LIBRARY(TBB_EXTRA_LIBRARIES
     ${TBB_ROOT}/lib
     $ENV{TBB_ROOT}
     $ENV{TBB_ROOT}/lib
-    # ${CMAKE_SOURCE_DIR}/dep/tbb/build/vsproject/ia32/Release
 )
 
 FIND_LIBRARY(TBB_LIBRARIES_DEBUG
@@ -54,7 +51,6 @@ FIND_LIBRARY(TBB_LIBRARIES_DEBUG
     ${TBB_ROOT}/lib
     $ENV{TBB_ROOT}
     $ENV{TBB_ROOT}/lib
-    # ${CMAKE_SOURCE_DIR}/dep/tbb/build/vsproject/ia32/Debug
 )
 
 FIND_LIBRARY(TBB_EXTRA_LIBRARIES_DEBUG
@@ -67,7 +63,6 @@ FIND_LIBRARY(TBB_EXTRA_LIBRARIES_DEBUG
     ${TBB_ROOT}/lib
     $ENV{TBB_ROOT}
     $ENV{TBB_ROOT}/lib
-    # ${CMAKE_SOURCE_DIR}/dep/tbb/build/vsproject/ia32/Debug
 )
 
 SET(TBB_FOUND 0)

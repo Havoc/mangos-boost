@@ -16,7 +16,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-set(EXECUTABLE_NAME realmd)
+set(EXECUTABLE_NAME cmangos_service_realmd)
 
 set(EXECUTABLE_SRCS
     AuthCodes.h
@@ -31,8 +31,8 @@ set(EXECUTABLE_SRCS
     SessionManager.h
    )
 
+# Add resource file to windows build
 if(WIN32)
-  # add resource file to windows build
   set(EXECUTABLE_SRCS ${EXECUTABLE_SRCS} realmd.rc)
 endif()
 
@@ -55,24 +55,24 @@ include_directories(
   ${CMAKE_SOURCE_DIR}/src/framework/system
   ${CMAKE_SOURCE_DIR}/src/framework/threading
   ${CMAKE_SOURCE_DIR}/src/framework/utilities
+  ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_BINARY_DIR}
 )
 
-add_executable(${EXECUTABLE_NAME}
-  ${EXECUTABLE_SRCS}
-)
+add_executable(${EXECUTABLE_NAME} ${EXECUTABLE_SRCS})
+set_target_properties(${EXECUTABLE_NAME} PROPERTIES FOLDER Services)
 
 add_dependencies(${EXECUTABLE_NAME} revision.h)
 if(WIN32)
-  add_dependencies(${EXECUTABLE_NAME} ace)
+  add_dependencies(${EXECUTABLE_NAME} cmangos_dependency_ace)
 endif()
 
 target_link_libraries(${EXECUTABLE_NAME}
-  framework
-  backtrace
-  ${OPENSSL_LIBRARIES}
-  ${Boost_LIBRARIES}
   ${ACE_LIBRARIES}
+  ${Boost_LIBRARIES}
+  ${OPENSSL_LIBRARIES}
+  cmangos_dependency_backtrace
+  cmangos_library_framework
 )
 
 if(WIN32)
@@ -86,9 +86,7 @@ if(WIN32)
 endif()
 
 if(UNIX)
-  target_link_libraries(${EXECUTABLE_NAME}
-    ${MYSQL_LIBRARY}
-  )
+  target_link_libraries(${EXECUTABLE_NAME} ${MYSQL_LIBRARY})
 endif()
 
 set(EXECUTABLE_LINK_FLAGS "")
