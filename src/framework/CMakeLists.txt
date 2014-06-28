@@ -143,6 +143,7 @@ set(SRC_GRP_UTILITIES
     utilities/EventProcessor.cpp
     utilities/EventProcessor.h
     utilities/LinkedList.h
+    utilities/Timer.cpp
     utilities/Timer.h
     utilities/TypeList.h
     utilities/UnorderedMapSet.h
