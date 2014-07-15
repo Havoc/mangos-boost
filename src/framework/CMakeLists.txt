@@ -91,6 +91,12 @@ set(SRC_GRP_GAMESYSTEM
     game_system/TypeContainerVisitor.h
 )
 
+set(SRC_GRP_HELPER
+    helper/ConsoleArguments.h
+    helper/Hints.h
+    helper/ProcessPriority.h
+)
+
 set(SRC_GRP_LOG
     log/Log.cpp
     log/Log.h
@@ -183,6 +189,7 @@ set(LIBRARY_SRCS
     ${SRC_GRP_DEBUGGING}
     ${SRC_GRP_DYNAMIC}
     ${SRC_GRP_GAMESYSTEM}
+    ${SRC_GRP_HELPER}
     ${SRC_GRP_LOG}
     ${SRC_GRP_NETWORK}
     ${SRC_GRP_PLATFORM}
@@ -204,6 +211,7 @@ source_group("Database\\DataStores" FILES ${SRC_GRP_DATABASE_DBC})
 source_group("Debugging" FILES ${SRC_GRP_DEBUGGING})
 source_group("Dynamic" FILES ${SRC_GRP_DYNAMIC})
 source_group("GameSystem" FILES ${SRC_GRP_GAMESYSTEM})
+source_group("Helper" FILES ${SRC_GRP_HELPER})
 source_group("Log" FILES ${SRC_GRP_LOG})
 source_group("Network" FILES ${SRC_GRP_NETWORK})
 source_group("Platform" FILES ${SRC_GRP_PLATFORM})

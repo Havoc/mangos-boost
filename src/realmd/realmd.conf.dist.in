@@ -3,7 +3,7 @@
 ############################################
 
 [RealmdConf]
-ConfVersion=2010062001
+ConfVersion=2014071501
 
 ###################################################################################################################
 # REALMD SETTINGS
@@ -33,11 +33,6 @@ ConfVersion=2010062001
 #         This option is useful for running multiple worldd/realmd instances
 #         on different IP addresses using default ports.
 #         DO NOT CHANGE THIS UNLESS YOU _REALLY_ KNOW WHAT YOU'RE DOING
-#
-#    PidFile
-#        Realmd daemon PID file
-#        Default: ""             - do not create PID file
-#                 "./realmd.pid" - create PID file (recommended name)
 #
 #    LogLevel
 #        Server console level of logging
@@ -112,7 +107,6 @@ LogsDir = ""
 MaxPingTime = 30
 RealmServerPort = 3724
 BindIP = "0.0.0.0"
-PidFile = ""
 LogLevel = 0
 LogTime = 0
 LogFile = "Realmd.log"
